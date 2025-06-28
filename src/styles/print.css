@@ -1,0 +1,120 @@
+/* Print-specific styles for exam papers */
+@media print {
+  /* Hide all non-printable elements */
+  body * {
+    visibility: hidden;
+  }
+  
+  /* Show only printable content */
+  .printable-paper,
+  .printable-paper * {
+    visibility: visible;
+  }
+  
+  /* Position printable content */
+  .printable-paper {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: white !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+  
+  /* Hide non-print elements */
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Page settings */
+  @page {
+    margin: 2cm;
+    size: A4;
+  }
+  
+  /* Page breaks */
+  .page-break {
+    page-break-before: always;
+  }
+  
+  .avoid-break {
+    page-break-inside: avoid;
+  }
+  
+  /* Typography for print */
+  h1, h2, h3, h4, h5, h6 {
+    color: black !important;
+  }
+  
+  p, li, span, div {
+    color: black !important;
+  }
+  
+  /* Ensure borders are visible */
+  .border-black {
+    border-color: black !important;
+  }
+  
+  .border-gray-300 {
+    border-color: #666 !important;
+  }
+  
+  .border-gray-400 {
+    border-color: #555 !important;
+  }
+  
+  /* Answer lines */
+  .border-b {
+    border-bottom: 1px solid #333 !important;
+  }
+  
+  /* Remove shadows and rounded corners */
+  * {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+  
+  /* Ensure proper spacing */
+  .space-y-8 > * + * {
+    margin-top: 2rem !important;
+  }
+  
+  .space-y-1 > * + * {
+    margin-top: 0.25rem !important;
+  }
+  
+  /* Font sizes for print */
+  .text-2xl {
+    font-size: 1.5rem !important;
+  }
+  
+  .text-xl {
+    font-size: 1.25rem !important;
+  }
+  
+  .text-lg {
+    font-size: 1.125rem !important;
+  }
+  
+  .text-sm {
+    font-size: 0.875rem !important;
+  }
+  
+  .text-xs {
+    font-size: 0.75rem !important;
+  }
+}
+
+/* Screen-only styles */
+@media screen {
+  .printable-paper {
+    max-width: 210mm;
+    margin: 0 auto;
+    background: white;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    padding: 2cm;
+  }
+}
