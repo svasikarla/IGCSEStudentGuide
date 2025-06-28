@@ -4,6 +4,7 @@ import { useSubjects } from '../hooks/useSubjects';
 import { useTopics } from '../hooks/useTopics';
 import TopicBrowser from '../components/study/TopicBrowser';
 import BulkContentGenerator from '../components/admin/BulkContentGenerator';
+import { useAuth } from '../contexts/AuthContext';
 
 const TopicsPage: React.FC = () => {
   const { subjectId } = useParams<{ subjectId: string }>();
@@ -13,6 +14,9 @@ const TopicsPage: React.FC = () => {
   const [currentSubject, setCurrentSubject] = useState<any>(null);
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [showBulkGenerator, setShowBulkGenerator] = useState(false);
+  
+  // Get authentication status and admin privileges
+  const { isAdmin } = useAuth();
 
   // Find the current subject details
   useEffect(() => {
@@ -161,15 +165,18 @@ const TopicsPage: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="flex gap-3">
-          <button
-            onClick={() => setShowBulkGenerator(!showBulkGenerator)}
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors flex items-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            Generate Content
-          </button>
+          {/* Only show Generate Content button to admin users */}
+          {isAdmin && (
+            <button
+              onClick={() => setShowBulkGenerator(!showBulkGenerator)}
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Generate Content
+            </button>
+          )}
         </div>
       </div>
 
@@ -247,15 +254,18 @@ const TopicsPage: React.FC = () => {
           </svg>
           <h3 className="text-xl font-semibold text-neutral-900 mb-2">No Topics Available Yet</h3>
           <p className="text-neutral-600 mb-6">
-            We're currently developing content for {currentSubject.name}. Use the "Generate Content" button above to create topics automatically.
+            We're currently developing content for {currentSubject.name}.
+            {isAdmin ? " Use the \"Generate Content\" button above to create topics automatically." : " Content for this subject will be available soon."}
           </p>
           <div className="flex justify-center gap-4">
-            <button
-              onClick={() => setShowBulkGenerator(true)}
-              className="px-6 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
-            >
-              Generate Topics
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => setShowBulkGenerator(true)}
+                className="px-6 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
+              >
+                Generate Topics
+              </button>
+            )}
             <button
               onClick={handleBack}
               className="px-6 py-3 bg-neutral-200 text-neutral-700 rounded-lg font-medium hover:bg-neutral-300 transition-colors"
