@@ -29,7 +29,7 @@ This guide will help you set up Google Gemini API integration for the IGCSE Stud
 
 1. **Update Server Environment**
    - Open `server/.env` file
-   - Find the line: `# GOOGLE_API_KEY=AIzaSyBUMcu5g9tCZ58OQmxbNV5-SSZ4WyfvsSI`
+   - Find the line: `# GOOGLE_API_KEY=`
    - Uncomment it and replace with your actual API key:
      ```
      GOOGLE_API_KEY=your_actual_api_key_here
