@@ -112,7 +112,7 @@ class GeminiService {
         maxTokens = 1000
       } = options;
 
-      // Enhanced prompt for JSON generation
+      // Enhanced prompt for JSON generation with truncation prevention
       const jsonPrompt = `${prompt}
 
 CRITICAL JSON FORMATTING REQUIREMENTS:
@@ -126,6 +126,8 @@ You MUST respond with ONLY a valid JSON object. Follow these rules exactly:
 6. For multi-line content, use \\n for line breaks within strings
 7. Escape quotes within strings as \\"
 8. Do NOT use single quotes anywhere
+9. KEEP CONTENT CONCISE to avoid truncation - prioritize completeness over length
+10. If content is long, summarize key points rather than providing exhaustive detail
 
 VALID JSON EXAMPLE:
 {
@@ -136,13 +138,16 @@ VALID JSON EXAMPLE:
   "learning_objectives": ["Objective 1", "Objective 2"]
 }
 
-Your response must be parseable by JSON.parse() without any modifications.`;
+IMPORTANT: Your response must be parseable by JSON.parse() without any modifications. Ensure the JSON is complete and properly closed.`;
 
-      const geminiModel = this.genAI.getGenerativeModel({ 
+      // Increase token limit to reduce truncation risk
+      const adjustedMaxTokens = Math.max(maxTokens, 2000);
+
+      const geminiModel = this.genAI.getGenerativeModel({
         model,
         generationConfig: {
           temperature,
-          maxOutputTokens: maxTokens,
+          maxOutputTokens: adjustedMaxTokens,
         }
       });
 
@@ -152,6 +157,11 @@ Your response must be parseable by JSON.parse() without any modifications.`;
 
       console.log(`Raw Gemini response length: ${jsonText.length} chars`);
       console.log(`Raw JSON response (first 200 chars): ${jsonText.substring(0, 200)}`);
+
+      // Check for truncation indicators
+      if (this._isResponseTruncated(jsonText)) {
+        console.warn('⚠️ Response appears to be truncated, attempting recovery...');
+      }
 
       // Clean up the response
       jsonText = this._cleanupJsonString(jsonText);
@@ -164,7 +174,30 @@ Your response must be parseable by JSON.parse() without any modifications.`;
   }
 
   /**
-   * Clean up common JSON string issues
+   * Check if response appears to be truncated
+   * @param {string} jsonString - The JSON text to check
+   * @returns {boolean} True if response appears truncated
+   */
+  _isResponseTruncated(jsonString) {
+    if (!jsonString) return true;
+
+    // Check for common truncation indicators
+    const truncationIndicators = [
+      // Ends abruptly without closing brace
+      !jsonString.trim().endsWith('}'),
+      // Contains unterminated strings (quotes without closing quotes)
+      (jsonString.match(/"/g) || []).length % 2 !== 0,
+      // Ends mid-word or mid-sentence
+      /[a-zA-Z0-9]$/.test(jsonString.trim()),
+      // Very long responses that might hit token limits
+      jsonString.length > 4000
+    ];
+
+    return truncationIndicators.some(indicator => indicator);
+  }
+
+  /**
+   * Clean up common JSON string issues with enhanced truncation handling
    * @param {string} jsonString - The JSON text to clean
    * @returns {string} Cleaned JSON text
    */
@@ -187,7 +220,12 @@ Your response must be parseable by JSON.parse() without any modifications.`;
       }
     }
 
-    // Step 3: Find proper ending of JSON by counting braces
+    // Step 3: Enhanced truncation handling - find the last complete property
+    if (this._isResponseTruncated(jsonString)) {
+      jsonString = this._handleTruncatedResponse(jsonString);
+    }
+
+    // Step 4: Find proper ending of JSON by counting braces
     let braceCount = 0;
     let endIndex = -1;
     for (let i = 0; i < jsonString.length; i++) {
@@ -206,7 +244,7 @@ Your response must be parseable by JSON.parse() without any modifications.`;
       jsonString = jsonString.substring(0, endIndex + 1);
     }
 
-    // Step 4: Try to parse first to see if it's already valid
+    // Step 5: Try to parse first to see if it's already valid
     try {
       return JSON.stringify(JSON.parse(jsonString));
     } catch (parseError) {
@@ -235,6 +273,66 @@ Your response must be parseable by JSON.parse() without any modifications.`;
         }
       }
     }
+  }
+
+  /**
+   * Handle truncated JSON responses by finding the last complete property
+   * @param {string} jsonString - The truncated JSON string
+   * @returns {string} JSON string with truncation handled
+   */
+  _handleTruncatedResponse(jsonString) {
+    console.log('🔧 Handling truncated response...');
+
+    // Find the last complete property by looking for the last comma or opening brace
+    let lastCompleteIndex = -1;
+    let inString = false;
+    let escapeNext = false;
+
+    for (let i = 0; i < jsonString.length; i++) {
+      const char = jsonString[i];
+
+      if (escapeNext) {
+        escapeNext = false;
+        continue;
+      }
+
+      if (char === '\\') {
+        escapeNext = true;
+        continue;
+      }
+
+      if (char === '"') {
+        inString = !inString;
+        continue;
+      }
+
+      if (!inString) {
+        if (char === ',' || char === '{') {
+          lastCompleteIndex = i;
+        }
+      }
+    }
+
+    // If we found a safe truncation point, cut there and close the JSON
+    if (lastCompleteIndex > 0) {
+      let truncated = jsonString.substring(0, lastCompleteIndex);
+
+      // If we cut at a comma, remove it
+      if (truncated.endsWith(',')) {
+        truncated = truncated.slice(0, -1);
+      }
+
+      // Ensure proper closing
+      if (!truncated.endsWith('}')) {
+        truncated += '}';
+      }
+
+      console.log(`✂️ Truncated at position ${lastCompleteIndex}, new length: ${truncated.length}`);
+      return truncated;
+    }
+
+    // If no safe truncation point found, return original
+    return jsonString;
   }
 
   /**
@@ -410,16 +508,30 @@ Your response must be parseable by JSON.parse() without any modifications.`;
       }
     }
 
-    if (!fixed.endsWith('}')) {
-      const lastBrace = fixed.lastIndexOf('}');
-      if (lastBrace >= 0) {
-        fixed = fixed.substring(0, lastBrace + 1);
-      }
+    // ENHANCED: Handle truncated responses more intelligently
+    // Find the last complete property before any truncation
+    const lastCompleteProperty = this._findLastCompleteProperty(fixed);
+    if (lastCompleteProperty.index > 0) {
+      fixed = fixed.substring(0, lastCompleteProperty.index);
+      console.log(`🔧 Truncated to last complete property at position ${lastCompleteProperty.index}`);
     }
 
-    // Fix the main issue: broken string values
-    fixed = fixed.replace(/"([^"]*?)",\s*"([^"]*?)"/g, '"$1, $2"');
-    fixed = fixed.replace(/",\s*([a-zA-Z]+[^"]*?)"/g, ', $1"');
+    // ENHANCED: Fix unterminated strings more robustly
+    fixed = this._fixUnterminatedStrings(fixed);
+
+    // ENHANCED: Ensure proper JSON closure
+    if (!fixed.endsWith('}')) {
+      // Remove any trailing incomplete content
+      const lastValidChar = this._findLastValidJsonChar(fixed);
+      if (lastValidChar > 0) {
+        fixed = fixed.substring(0, lastValidChar + 1);
+      }
+
+      // Add closing brace if needed
+      if (!fixed.endsWith('}')) {
+        fixed += '}';
+      }
+    }
 
     // Fix property names that are missing quotes - but be very careful
     // Look for patterns like: , description": or { description":
@@ -442,6 +554,106 @@ Your response must be parseable by JSON.parse() without any modifications.`;
 
     console.log('Aggressive fix result:', fixed.substring(0, 200));
     return fixed;
+  }
+
+  /**
+   * Find the last complete property in a JSON string
+   * @param {string} jsonString - The JSON string to analyze
+   * @returns {Object} Object with index of last complete property
+   */
+  _findLastCompleteProperty(jsonString) {
+    let lastCompleteIndex = -1;
+    let inString = false;
+    let escapeNext = false;
+    let braceDepth = 0;
+
+    for (let i = 0; i < jsonString.length; i++) {
+      const char = jsonString[i];
+
+      if (escapeNext) {
+        escapeNext = false;
+        continue;
+      }
+
+      if (char === '\\') {
+        escapeNext = true;
+        continue;
+      }
+
+      if (char === '"') {
+        inString = !inString;
+        continue;
+      }
+
+      if (!inString) {
+        if (char === '{') {
+          braceDepth++;
+        } else if (char === '}') {
+          braceDepth--;
+          if (braceDepth === 0) {
+            lastCompleteIndex = i;
+          }
+        } else if (char === ',' && braceDepth === 1) {
+          // Found a complete property separator at the top level
+          lastCompleteIndex = i;
+        }
+      }
+    }
+
+    return { index: lastCompleteIndex };
+  }
+
+  /**
+   * Fix unterminated strings in JSON
+   * @param {string} jsonString - The JSON string to fix
+   * @returns {string} Fixed JSON string
+   */
+  _fixUnterminatedStrings(jsonString) {
+    // Count quotes to see if we have an odd number (indicating unterminated string)
+    const quotes = (jsonString.match(/"/g) || []).length;
+
+    if (quotes % 2 !== 0) {
+      // We have an unterminated string
+      console.log('🔧 Fixing unterminated string...');
+
+      // Find the last quote and see what comes after it
+      const lastQuoteIndex = jsonString.lastIndexOf('"');
+      if (lastQuoteIndex >= 0) {
+        const afterLastQuote = jsonString.substring(lastQuoteIndex + 1);
+
+        // If there's content after the last quote that looks like it should be in the string
+        if (afterLastQuote && !afterLastQuote.match(/^\s*[,}]/)) {
+          // Add a closing quote before any structural characters
+          const structuralMatch = afterLastQuote.match(/^([^,}]*)/);
+          if (structuralMatch) {
+            const contentLength = structuralMatch[1].length;
+            const insertPos = lastQuoteIndex + 1 + contentLength;
+            jsonString = jsonString.substring(0, insertPos) + '"' + jsonString.substring(insertPos);
+          }
+        }
+      }
+    }
+
+    return jsonString;
+  }
+
+  /**
+   * Find the last valid JSON character position
+   * @param {string} jsonString - The JSON string to analyze
+   * @returns {number} Index of last valid character
+   */
+  _findLastValidJsonChar(jsonString) {
+    // Look for the last character that could validly end a JSON property value
+    const validEndChars = ['"', ']', '}', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+
+    for (let i = jsonString.length - 1; i >= 0; i--) {
+      const char = jsonString[i];
+      if (validEndChars.includes(char)) {
+        return i;
+      }
+    }
+
+    return jsonString.length - 1;
   }
 
   /**
