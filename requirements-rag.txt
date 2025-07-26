@@ -1,0 +1,48 @@
+# AI-Powered IGCSE Content System Requirements
+# RAG (Retrieval-Augmented Generation) Pipeline Dependencies
+# Compatible with Python 3.8+ including Python 3.13
+
+# Core Dependencies
+supabase>=2.0.0
+openai>=1.0.0
+tiktoken>=0.5.0
+numpy>=1.24.0
+
+# Optional Embedding Providers (for cost optimization)
+cohere>=5.0.0
+
+# Content Scraping and Processing
+firecrawl-py>=1.0.0
+pdfplumber>=0.11.0,<1.0.0  # Use latest 0.x version compatible with Python 3.13
+requests>=2.31.0
+
+# Text Processing and NLP
+nltk>=3.8.0
+textstat>=0.7.0
+
+# Async Processing
+aiohttp>=3.8.0
+asyncio-throttle>=1.0.0
+
+# Data Processing
+pandas>=2.0.0
+python-dateutil>=2.8.0
+
+# Configuration and Environment
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+
+# Logging and Monitoring
+structlog>=23.0.0
+rich>=13.0.0
+
+# Development and Testing
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+black>=23.0.0
+flake8>=6.0.0
+
+# Optional: Local Embedding Models (if using local inference)
+# sentence-transformers>=2.2.0
+# torch>=2.0.0
+# transformers>=4.30.0

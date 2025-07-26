@@ -1,0 +1,11 @@
+2025-07-17 23:53:42 - ollama_generation - INFO - === System Status ===
+2025-07-17 23:53:42 - ollama_generation - INFO - Ollama: error: 'name'
+2025-07-17 23:53:42 - ollama_generation - INFO - Database: healthy
+2025-07-17 23:53:42 - ollama_generation - INFO - Available models: []
+2025-07-17 23:54:12 - ollama_generation - INFO - Generating 2 quiz questions for topic: 30424efd-b7df-49d0-85ba-0d94185cdabd
+2025-07-17 23:54:15 - ollama_generation - ERROR - Error generating quiz: 'name'
+2025-07-17 23:55:57 - ollama_generation - INFO - Generating 2 quiz questions for topic: 30424efd-b7df-49d0-85ba-0d94185cdabd
+2025-07-17 23:56:03 - ollama_generation - INFO - Using Ollama host: http://localhost:11434
+2025-07-17 23:56:03 - ollama_generation - INFO - Generating 2 quiz questions for: Cell Biology
+2025-07-18 00:00:57 - ollama_generation - INFO - Question 1: Valid (Quality: 1.00)
+2025-07-18 00:00:57 - ollama_generation - INFO - Question 2: Valid (Quality: 0.90)

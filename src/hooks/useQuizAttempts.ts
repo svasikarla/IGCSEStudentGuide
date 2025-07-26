@@ -195,9 +195,32 @@ export function useQuizAttempts() {
 
       if (questionsError) throw new Error(questionsError.message);
 
+      // Transform questions to ensure options is an array
+      const transformedQuestions = (questionsData || []).map(question => {
+        let options: string[] = [];
+
+        // Handle different formats of options field
+        if (question.options) {
+          if (Array.isArray(question.options)) {
+            // Already an array
+            options = question.options;
+          } else if (typeof question.options === 'object') {
+            // JSONB object format: {"A": "option1", "B": "option2", ...}
+            // Convert to array in alphabetical order of keys
+            const sortedKeys = Object.keys(question.options).sort();
+            options = sortedKeys.map(key => question.options[key]);
+          }
+        }
+
+        return {
+          ...question,
+          options
+        };
+      });
+
       return {
         ...quizData,
-        questions: questionsData || []
+        questions: transformedQuestions
       };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch quiz';
@@ -411,9 +434,32 @@ export function useQuizAttempts() {
 
       if (questionsError) throw new Error(questionsError.message);
 
+      // Transform questions to ensure options is an array (same as in fetchQuizWithQuestions)
+      const transformedQuestions = (questionsData || []).map(question => {
+        let options: string[] = [];
+
+        // Handle different formats of options field
+        if (question.options) {
+          if (Array.isArray(question.options)) {
+            // Already an array
+            options = question.options;
+          } else if (typeof question.options === 'object') {
+            // JSONB object format: {"A": "option1", "B": "option2", ...}
+            // Convert to array in alphabetical order of keys
+            const sortedKeys = Object.keys(question.options).sort();
+            options = sortedKeys.map(key => question.options[key]);
+          }
+        }
+
+        return {
+          ...question,
+          options
+        };
+      });
+
       // Calculate score
       let correctAnswers = 0;
-      questionsData?.forEach(question => {
+      transformedQuestions.forEach(question => {
         const userAnswerIndex = answers[question.id];
 
         if (userAnswerIndex !== undefined && question.options && Array.isArray(question.options)) {
@@ -427,7 +473,7 @@ export function useQuizAttempts() {
         }
       });
 
-      const totalQuestions = questionsData?.length || 0;
+      const totalQuestions = transformedQuestions.length || 0;
       const scorePercentage = totalQuestions > 0 
         ? (correctAnswers / totalQuestions) * 100 
         : 0;

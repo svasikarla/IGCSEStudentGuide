@@ -41,13 +41,36 @@ const QuizResults: React.FC<QuizResultsProps> = ({ attemptId, onRetake }) => {
           .select('*, quiz_questions(*)')
           .eq('id', attemptData.quiz_id)
           .single();
-        
+
         if (quizError) throw new Error(quizError.message);
         if (!quizData) throw new Error('Quiz not found');
-        
+
+        // Transform questions to ensure options is an array
+        const transformedQuestions = (quizData.quiz_questions || []).map((question: any) => {
+          let options: string[] = [];
+
+          // Handle different formats of options field
+          if (question.options) {
+            if (Array.isArray(question.options)) {
+              // Already an array
+              options = question.options;
+            } else if (typeof question.options === 'object') {
+              // JSONB object format: {"A": "option1", "B": "option2", ...}
+              // Convert to array in alphabetical order of keys
+              const sortedKeys = Object.keys(question.options).sort();
+              options = sortedKeys.map(key => question.options[key]);
+            }
+          }
+
+          return {
+            ...question,
+            options
+          };
+        });
+
         setQuiz({
           ...quizData,
-          questions: quizData.quiz_questions || []
+          questions: transformedQuestions
         });
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to load quiz results';

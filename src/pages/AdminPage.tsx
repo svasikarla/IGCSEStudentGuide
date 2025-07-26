@@ -1,30 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSubjects } from '../hooks/useSubjects';
 import { useTopics } from '../hooks/useTopics';
+import { useChapters } from '../hooks/useChapters';
 import SubjectManagement from '../components/admin/SubjectManagement';
 import TopicGeneratorForm from '../components/admin/TopicGeneratorForm';
 import FlashcardGeneratorForm from '../components/admin/FlashcardGeneratorForm';
 import QuizGeneratorForm from '../components/admin/QuizGeneratorForm';
 import ExamPaperGeneratorForm from '../components/admin/ExamPaperGeneratorForm';
 import LLMProviderTester from '../components/admin/LLMProviderTester';
+import ContentScrapingInterface from '../components/admin/ContentScrapingInterface';
+import QuestionStatsDashboard from '../components/admin/QuestionStatsDashboard';
+import ChapterList from '../components/admin/ChapterList';
+import ChapterForm from '../components/admin/ChapterForm';
+import { Chapter } from '../types/chapter';
 
 /**
  * Admin page for content generation using LLM
  */
 const AdminPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'subjects' | 'topics' | 'flashcards' | 'quizzes' | 'exam-papers' | 'test-llm'>('subjects');
+  const [activeTab, setActiveTab] = useState<'subjects' | 'chapters' | 'topics' | 'flashcards' | 'quizzes' | 'exam-papers' | 'scraping' | 'test-llm' | 'question-stats'>('subjects');
   const { subjects } = useSubjects();
   const navigate = useNavigate();
 
   // Get topics for the selected subject
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
   const { topics } = useTopics(selectedSubjectId);
+  const { chapters } = useChapters(selectedSubjectId);
+
+  // Chapter management state
+  const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
+  const [editingChapter, setEditingChapter] = useState<Chapter | null>(null);
+  const [showChapterForm, setShowChapterForm] = useState(false);
 
   // Handle tab change
-  const handleTabChange = (tab: 'subjects' | 'topics' | 'flashcards' | 'quizzes' | 'exam-papers' | 'test-llm') => {
+  const handleTabChange = (tab: 'subjects' | 'chapters' | 'topics' | 'flashcards' | 'quizzes' | 'exam-papers' | 'scraping' | 'test-llm' | 'question-stats') => {
     setActiveTab(tab);
   };
+
+  // Listen for navigation events from QuickQuestionStats
+  useEffect(() => {
+    const handleNavigateToQuestionStats = () => {
+      setActiveTab('question-stats');
+    };
+
+    window.addEventListener('navigate-to-question-stats', handleNavigateToQuestionStats);
+    return () => {
+      window.removeEventListener('navigate-to-question-stats', handleNavigateToQuestionStats);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -53,6 +77,16 @@ const AdminPage: React.FC = () => {
             onClick={() => handleTabChange('subjects')}
           >
             Subjects
+          </button>
+          <button
+            className={`px-4 lg:px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${
+              activeTab === 'chapters'
+                ? 'border-b-2 border-blue-500 text-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+            onClick={() => handleTabChange('chapters')}
+          >
+            Chapters
           </button>
           <button
             className={`px-4 lg:px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${
@@ -96,6 +130,26 @@ const AdminPage: React.FC = () => {
           </button>
           <button
             className={`px-4 lg:px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${
+              activeTab === 'scraping'
+                ? 'border-b-2 border-blue-500 text-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+            onClick={() => handleTabChange('scraping')}
+          >
+            Content Scraping
+          </button>
+          <button
+            className={`px-4 lg:px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${
+              activeTab === 'question-stats'
+                ? 'border-b-2 border-blue-500 text-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+            onClick={() => handleTabChange('question-stats')}
+          >
+            Question Statistics
+          </button>
+          <button
+            className={`px-4 lg:px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${
               activeTab === 'test-llm'
                 ? 'border-b-2 border-blue-500 text-blue-600'
                 : 'text-gray-500 hover:text-gray-700'
@@ -110,6 +164,99 @@ const AdminPage: React.FC = () => {
       <div className={activeTab === 'subjects' ? '' : 'bg-white rounded-lg shadow-md p-6'}>
         {activeTab === 'subjects' && (
           <SubjectManagement />
+        )}
+
+        {activeTab === 'chapters' && (
+          <div className="bg-white rounded-lg shadow-md">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-xl font-semibold text-neutral-900">Chapter Management</h2>
+                  <p className="text-neutral-600 mt-1">Organize topics into chapters for better content structure</p>
+                </div>
+                {selectedSubjectId && (
+                  <button
+                    onClick={() => {
+                      setEditingChapter(null);
+                      setShowChapterForm(true);
+                    }}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    New Chapter
+                  </button>
+                )}
+              </div>
+
+              {/* Subject Selection */}
+              <div className="mb-6">
+                <label htmlFor="subject-select" className="block text-sm font-medium text-neutral-700 mb-2">
+                  Select Subject
+                </label>
+                <select
+                  id="subject-select"
+                  value={selectedSubjectId || ''}
+                  onChange={(e) => {
+                    setSelectedSubjectId(e.target.value || null);
+                    setSelectedChapter(null);
+                    setShowChapterForm(false);
+                  }}
+                  className="w-full max-w-md px-3 py-2 border border-neutral-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                >
+                  <option value="">Choose a subject...</option>
+                  {subjects.map((subject) => (
+                    <option key={subject.id} value={subject.id}>
+                      {subject.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Chapter Management Interface */}
+              {selectedSubjectId && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  {/* Chapter List */}
+                  <div className={`${showChapterForm ? 'lg:col-span-5' : 'lg:col-span-12'}`}>
+                    <ChapterList
+                      subjectId={selectedSubjectId}
+                      onChapterSelect={setSelectedChapter}
+                      onChapterEdit={(chapter) => {
+                        setEditingChapter(chapter);
+                        setShowChapterForm(true);
+                      }}
+                      onChapterDelete={(chapterId) => {
+                        if (selectedChapter?.id === chapterId) {
+                          setSelectedChapter(null);
+                        }
+                      }}
+                      selectedChapter={selectedChapter}
+                    />
+                  </div>
+
+                  {/* Chapter Form */}
+                  {showChapterForm && (
+                    <div className="lg:col-span-7">
+                      <ChapterForm
+                        subjectId={selectedSubjectId}
+                        chapter={editingChapter}
+                        onSave={(savedChapter) => {
+                          setSelectedChapter(savedChapter);
+                          setShowChapterForm(false);
+                          setEditingChapter(null);
+                        }}
+                        onCancel={() => {
+                          setShowChapterForm(false);
+                          setEditingChapter(null);
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {activeTab === 'topics' && (
@@ -132,6 +279,7 @@ const AdminPage: React.FC = () => {
             <QuizGeneratorForm
               subjects={subjects}
               topics={topics}
+              chapters={chapters}
               onSubjectChange={setSelectedSubjectId}
             />
           </div>
@@ -141,6 +289,14 @@ const AdminPage: React.FC = () => {
           <div className="bg-white rounded-lg shadow-md p-6">
             <ExamPaperGeneratorForm />
           </div>
+        )}
+
+        {activeTab === 'scraping' && (
+          <ContentScrapingInterface />
+        )}
+
+        {activeTab === 'question-stats' && (
+          <QuestionStatsDashboard />
         )}
 
         {activeTab === 'test-llm' && (

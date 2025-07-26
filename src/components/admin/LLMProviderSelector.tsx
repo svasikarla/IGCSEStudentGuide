@@ -61,6 +61,12 @@ const LLMProviderSelector: React.FC<LLMProviderSelectorProps> = ({
             name: 'Google Gemini',
             available: false,
             models: []
+          },
+          {
+            id: 'huggingface',
+            name: 'Hugging Face',
+            available: false,
+            models: []
           }
         ]);
       } finally {
@@ -190,6 +196,12 @@ const LLMProviderSelector: React.FC<LLMProviderSelectorProps> = ({
         )}
         {selectedProvider === LLMProvider.GOOGLE && !providers.find(p => p.id === 'google')?.available && (
           <p>⚠️ Google Gemini requires API key configuration. Will fallback to OpenAI if generation fails.</p>
+        )}
+        {selectedProvider === LLMProvider.HUGGINGFACE && providers.find(p => p.id === 'huggingface')?.available && (
+          <p>🚀 Hugging Face models offer ultra-low costs with 99%+ savings over commercial providers.</p>
+        )}
+        {selectedProvider === LLMProvider.HUGGINGFACE && !providers.find(p => p.id === 'huggingface')?.available && (
+          <p>⚠️ Hugging Face requires HF_TOKEN configuration. Will fallback to OpenAI if generation fails.</p>
         )}
       </div>
     </div>

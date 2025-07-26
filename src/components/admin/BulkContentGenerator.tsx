@@ -120,6 +120,14 @@ const BulkContentGenerator: React.FC<BulkContentGeneratorProps> = ({
         return ['gpt-4o-mini', 'gpt-4o', 'gpt-4-turbo'];
       case LLMProvider.GOOGLE:
         return ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.0-pro'];
+      case LLMProvider.HUGGINGFACE:
+        return [
+          'meta-llama/Llama-3.1-8B-Instruct',
+          'meta-llama/Llama-3.1-70B-Instruct',
+          'mistralai/Mistral-7B-Instruct-v0.3',
+          'Qwen/Qwen-2.5-7B-Instruct',
+          'deepseek-ai/DeepSeek-R1-Distill-Llama-8B'
+        ];
       default:
         return [];
     }
@@ -192,6 +200,7 @@ const BulkContentGenerator: React.FC<BulkContentGeneratorProps> = ({
                 >
                   <option value={LLMProvider.OPENAI}>OpenAI</option>
                   <option value={LLMProvider.GOOGLE}>Google Gemini</option>
+                  <option value={LLMProvider.HUGGINGFACE}>Hugging Face (Ultra Low Cost)</option>
                 </select>
               </div>
 

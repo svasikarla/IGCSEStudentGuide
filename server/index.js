@@ -5,6 +5,9 @@ const rateLimit = require('express-rate-limit');
 
 // Import routes
 const llmRoutes = require('./routes/llm');
+const embeddingsRoutes = require('./routes/embeddings');
+const scrapingRoutes = require('./routes/scraping');
+const simplifiedGenerationRoutes = require('./routes/simplified-generation');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -31,9 +34,20 @@ app.get('/api/health', (req, res) => {
 // Use the LLM routes with admin protection
 app.use('/api/llm', llmRoutes);
 
+// Use the embeddings routes (no admin protection needed for search)
+app.use('/api/embeddings', embeddingsRoutes);
+
+// Use the scraping routes with admin protection
+app.use('/api/scraping', scrapingRoutes);
+
+// Use the simplified generation routes (cost-optimized content generation)
+app.use('/api/simplified-generation', simplifiedGenerationRoutes);
+
 // Start server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
   console.log(`Health check: http://localhost:${port}/api/health`);
   console.log(`LLM endpoints (admin only): http://localhost:${port}/api/llm/generate`);
+  console.log(`Simplified generation: http://localhost:${port}/api/simplified-generation/quiz`);
+  console.log(`Embeddings endpoints: http://localhost:${port}/api/embeddings/generate`);
 });

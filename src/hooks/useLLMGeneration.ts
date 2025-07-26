@@ -10,6 +10,61 @@ import { validateChemistryContent, ValidationResult, isChemistryContent as isChe
 // --- Shared Utility Functions ---
 
 /**
+ * Fix common JSON parsing issues in LLM responses
+ * @param jsonString - The malformed JSON string
+ * @returns Fixed JSON string
+ */
+const fixJsonString = (jsonString: string): string => {
+  let fixed = jsonString.trim();
+
+  // Fix 1: Quote unquoted property names
+  fixed = fixed.replace(/(\s+)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, (match, whitespace, propName) => {
+    if (!match.includes('"')) {
+      return `${whitespace}"${propName}":`;
+    }
+    return match;
+  });
+
+  // Fix 2: Quote unquoted property names at line start
+  fixed = fixed.replace(/^(\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/gm, (match, whitespace, propName) => {
+    if (!match.includes('"')) {
+      return `${whitespace}"${propName}":`;
+    }
+    return match;
+  });
+
+  // Fix 3: Quote unquoted property names after commas
+  fixed = fixed.replace(/,(\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, (match, whitespace, propName) => {
+    if (!match.includes('"')) {
+      return `,${whitespace}"${propName}":`;
+    }
+    return match;
+  });
+
+  // Fix 4: Replace single quotes with double quotes for property names
+  fixed = fixed.replace(/(\s*)'([^']*)'(\s*:)/g, '$1"$2"$3');
+
+  // Fix 5: Replace single quotes with double quotes for property values
+  fixed = fixed.replace(/(\s*:\s*)'([^']*)'(\s*[,}])/g, '$1"$2"$3');
+
+  // Fix 6: Remove trailing commas before closing braces
+  fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
+
+  // Fix 7: Fix missing commas between properties
+  fixed = fixed.replace(/"([^"]*)"(\s+)"([^"]*)"(\s*:)/g, '"$1", "$3"$4');
+
+  // Fix 8: Handle unterminated strings at the end
+  const quoteCount = (fixed.match(/"/g) || []).length;
+  if (quoteCount % 2 !== 0) {
+    if (!fixed.trim().endsWith('"')) {
+      fixed = fixed.trim() + '"';
+    }
+  }
+
+  return fixed;
+};
+
+/**
  * Shared function to generate content for a single topic
  * Used by both useTopicListGeneration and useTopicContentGeneration
  */
@@ -190,7 +245,25 @@ export function useTopicListGeneration() {
         throw new Error('No JSON array found in the LLM response.');
       }
       const jsonString = response.substring(startIndex, endIndex + 1);
-      const parsedTopics = JSON.parse(jsonString);
+
+      // Apply smart JSON parsing with error handling
+      let parsedTopics;
+      try {
+        parsedTopics = JSON.parse(jsonString);
+      } catch (parseError) {
+        console.log('Topic generation JSON parse failed, attempting to fix:', parseError);
+
+        // Try to fix common JSON issues
+        const fixedJson = fixJsonString(jsonString);
+        try {
+          parsedTopics = JSON.parse(fixedJson);
+          console.log('✅ Topic generation JSON fixed and parsed successfully');
+        } catch (finalError) {
+          console.error('Topic generation JSON fix failed:', finalError);
+          const errorMessage = finalError instanceof Error ? finalError.message : 'Unknown parsing error';
+          throw new Error(`Failed to parse topic generation response: ${errorMessage}`);
+        }
+      }
 
       if (!Array.isArray(parsedTopics)) {
         throw new Error('LLM response is not a JSON array.');
@@ -318,7 +391,26 @@ export function useTopicListGeneration() {
             detailedResponse.indexOf('['),
             detailedResponse.lastIndexOf(']') + 1
           );
-          const detailedTopics = JSON.parse(detailedJson);
+
+          // Apply smart JSON parsing with error handling
+          let detailedTopics;
+          try {
+            detailedTopics = JSON.parse(detailedJson);
+          } catch (parseError) {
+            console.log('Detailed topic generation JSON parse failed, attempting to fix:', parseError);
+
+            // Try to fix common JSON issues
+            const fixedJson = fixJsonString(detailedJson);
+            try {
+              detailedTopics = JSON.parse(fixedJson);
+              console.log('✅ Detailed topic generation JSON fixed and parsed successfully');
+            } catch (finalError) {
+              console.error('Detailed topic generation JSON fix failed:', finalError);
+              const errorMessage = finalError instanceof Error ? finalError.message : 'Unknown parsing error';
+              console.log(`Skipping this major area due to JSON parsing error: ${errorMessage}`);
+              continue; // Skip this major area and continue with the next one
+            }
+          }
 
           // Add the major area as level 1
           allTopics.push({

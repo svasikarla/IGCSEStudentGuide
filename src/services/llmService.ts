@@ -17,6 +17,7 @@ export const DEFAULT_MODELS: Record<LLMProvider, string> = {
   [LLMProvider.GOOGLE]: 'gemini-1.5-flash',
   [LLMProvider.AZURE]: 'gpt-4o',
   [LLMProvider.ANTHROPIC]: 'claude-3-sonnet',
+  [LLMProvider.HUGGINGFACE]: 'meta-llama/Llama-3.1-8B-Instruct',
   [LLMProvider.CUSTOM]: 'custom-model'
 };
 

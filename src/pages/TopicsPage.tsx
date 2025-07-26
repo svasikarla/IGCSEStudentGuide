@@ -208,9 +208,11 @@ const TopicsPage: React.FC = () => {
           <div className="xl:col-span-5">
             <TopicBrowser
               topics={topics}
+              subjectId={subjectId}
               selectedTopicId={selectedTopicId}
               onTopicSelect={handleTopicSelect}
               loading={loading}
+              useChapterView={true}
             />
           </div>
 

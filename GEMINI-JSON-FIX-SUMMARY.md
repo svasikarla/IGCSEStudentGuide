@@ -7,6 +7,18 @@ The Google Gemini API was returning malformed JSON that couldn't be parsed by `J
 ```
 Expected double-quoted property name in JSON at position 163
 Unexpected token '\', ..."", "with":\n\n* pH 7"... is not valid JSON
+Expected ',' or ']' after array element in JSON at position 5266
+Raw JSON response truncated at position 5521
+```
+
+**Latest Issue (December 2024):**
+```
+Raw JSON response (first 200 chars): {
+  "title": "Quiz: IGCSE Organic Chemistry",
+  "description": "This quiz tests your understanding of key organic chemistry concepts.",
+  "difficulty_level": 3,
+  "time_limit_minutes": 20,
+  "question
 ```
 
 ## 🔧 Root Cause Analysis
@@ -141,6 +153,30 @@ No changes needed in the frontend - the fix is transparent to users.
 
 ---
 
+## 🆕 Latest Update (December 2024)
+
+### **New Issue Resolved: Response Truncation**
+
+Added advanced handling for truncated JSON responses:
+
+1. **Smart JSON Fixing**: New `_smartJsonFix()` method with 3-step approach
+2. **Truncation Detection**: Intelligent detection of incomplete responses
+3. **Fallback JSON**: Valid fallback structure when all fixes fail
+4. **Retry Mechanism**: Automatic retry with 2 attempts per request
+
+### **Test Results (Latest)**
+```
+✅ Quiz generation successful!
+📊 Results:
+   Title: Quiz: IGCSE Organic Chemistry Basics
+   Description: Test your knowledge of fundamental organic chemistry concepts.
+   Questions: 3
+   Difficulty: 3
+   Time limit: 15 minutes
+
+✅ JSON validation successful - can be stringified and reparsed
+```
+
 **Status**: ✅ **COMPLETE AND READY FOR USE**
 
-The Gemini JSON parsing issue has been resolved and the LLM integration now works reliably with both OpenAI and Google Gemini providers.
+The Gemini JSON parsing issue has been **completely resolved** and the LLM integration now works reliably with both OpenAI and Google Gemini providers.

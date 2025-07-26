@@ -3,6 +3,8 @@ import { useTopicListGeneration, useTopicContentGeneration } from '../../hooks/u
 import { Subject } from '../../hooks/useSubjects';
 import { Topic } from '../../hooks/useTopics';
 import { useTopics } from '../../hooks/useTopics';
+import { useChapters } from '../../hooks/useChapters';
+import { Chapter } from '../../types/chapter';
 import { LLMProvider } from '../../services/llmAdapter';
 import LLMProviderSelector from './LLMProviderSelector';
 
@@ -17,6 +19,7 @@ interface TopicGeneratorFormProps {
  */
 const TopicGeneratorForm: React.FC<TopicGeneratorFormProps> = ({ subjects, onSubjectChange }) => {
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+  const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
   const [generatedTopics, setGeneratedTopics] = useState<Partial<Topic>[]>([]);
   const [selectedTopicTitle, setSelectedTopicTitle] = useState<string | null>(null);
   const [generatedContent, setGeneratedContent] = useState<Partial<Topic> | null>(null);
@@ -27,6 +30,7 @@ const TopicGeneratorForm: React.FC<TopicGeneratorFormProps> = ({ subjects, onSub
   const [tier, setTier] = useState<string>('');
   const [useComprehensiveGeneration, setUseComprehensiveGeneration] = useState<boolean>(true);
   const [includeContentGeneration, setIncludeContentGeneration] = useState<boolean>(false);
+  const [generateForChapter, setGenerateForChapter] = useState<boolean>(false);
 
   // LLM Provider state
   const [selectedProvider, setSelectedProvider] = useState<LLMProvider>(LLMProvider.OPENAI);
@@ -44,6 +48,7 @@ const TopicGeneratorForm: React.FC<TopicGeneratorFormProps> = ({ subjects, onSub
   
   const { generateTopicList, generateComprehensiveCurriculum, loading, error } = useTopicListGeneration();
   const { topics, saveTopics, saveSingleTopic, isSaving, saveError } = useTopics(selectedSubject?.id || null);
+  const { chapters } = useChapters(selectedSubject?.id || null);
   const { generateTopicContent, loading: contentLoading, error: contentError } = useTopicContentGeneration();
 
   // Update selected subject when subjects load
@@ -205,11 +210,12 @@ const TopicGeneratorForm: React.FC<TopicGeneratorFormProps> = ({ subjects, onSub
       learning_objectives: topic.learning_objectives || null,
       display_order: 0,
       is_published: true,
+      chapter_id: generateForChapter && selectedChapter ? selectedChapter.id : null, // Assign to chapter if selected
       // Enhanced curriculum fields
       syllabus_code: topic.syllabus_code || null,
       curriculum_board: topic.curriculum_board || curriculumBoard,
       tier: topic.tier || tier || null,
-      major_area: topic.major_area || null,
+      major_area: topic.major_area || (selectedChapter ? selectedChapter.title : null), // Use chapter title as major_area for backward compatibility
       topic_level: topic.topic_level || 1,
       official_syllabus_ref: topic.official_syllabus_ref || null,
     }));
@@ -217,6 +223,10 @@ const TopicGeneratorForm: React.FC<TopicGeneratorFormProps> = ({ subjects, onSub
     const success = await saveTopics(selectedSubject.id, topicsToSave);
     if (success) {
       setSaveSuccess(true);
+      // Dispatch event to notify chapter components of new topics
+      if (generateForChapter && selectedChapter) {
+        document.dispatchEvent(new Event('topicsChanged'));
+      }
     }
   };
 
@@ -327,6 +337,77 @@ const TopicGeneratorForm: React.FC<TopicGeneratorFormProps> = ({ subjects, onSub
                   </div>
                 )}
               </div>
+
+              {/* Chapter-based Generation Toggle */}
+              {selectedSubject && chapters.length > 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="generateForChapter"
+                      checked={generateForChapter}
+                      onChange={(e) => {
+                        setGenerateForChapter(e.target.checked);
+                        if (!e.target.checked) {
+                          setSelectedChapter(null);
+                        }
+                      }}
+                      className="rounded border-neutral-300 text-primary-600 shadow-sm focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50"
+                      disabled={loading}
+                    />
+                    <label htmlFor="generateForChapter" className="text-sm font-medium text-blue-900">
+                      Generate topics for a specific chapter
+                    </label>
+                  </div>
+                  <p className="mt-1 text-sm text-blue-700">
+                    Generate topics within an existing chapter structure for better organization
+                  </p>
+                </div>
+              )}
+
+              {/* Chapter Selection */}
+              {generateForChapter && selectedSubject && chapters.length > 0 && (
+                <div>
+                  <label htmlFor="chapter" className="block text-sm font-medium text-neutral-700 mb-2">
+                    Target Chapter *
+                  </label>
+                  <div className="relative">
+                    <select
+                      id="chapter"
+                      value={selectedChapter?.id || ''}
+                      onChange={(e) => {
+                        const chapterId = e.target.value;
+                        const chapter = chapters.find(c => c.id === chapterId) || null;
+                        setSelectedChapter(chapter);
+                      }}
+                      className="w-full px-4 py-3 border border-neutral-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 appearance-none bg-white"
+                      disabled={loading}
+                    >
+                      <option value="">Select a chapter...</option>
+                      {chapters.map(chapter => (
+                        <option key={chapter.id} value={chapter.id}>
+                          {chapter.syllabus_code ? `${chapter.syllabus_code}. ` : ''}{chapter.title}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
+                      <svg className="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                  {selectedChapter && (
+                    <div className="mt-2 p-3 bg-neutral-50 border border-neutral-200 rounded-lg">
+                      <p className="text-sm text-neutral-700">
+                        <span className="font-medium">Chapter:</span> {selectedChapter.title}
+                      </p>
+                      {selectedChapter.description && (
+                        <p className="text-sm text-neutral-600 mt-1">{selectedChapter.description}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Grade Level */}
               <div>

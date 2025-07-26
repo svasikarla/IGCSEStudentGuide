@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSubjects } from '../hooks/useSubjects';
+import SubjectChapterPreview from '../components/subjects/SubjectChapterPreview';
 
 const SubjectsPage: React.FC = () => {
   const { subjects, loading, error } = useSubjects();
@@ -247,6 +248,18 @@ const SubjectsPage: React.FC = () => {
               <p className="text-neutral-600 mb-3 line-clamp-2 text-sm leading-relaxed">
                 {subject.description}
               </p>
+
+              {/* Chapter Preview */}
+              <div className="mb-3 p-2 bg-neutral-50 rounded-lg border border-neutral-100">
+                <SubjectChapterPreview
+                  subjectId={subject.id}
+                  maxChapters={3}
+                  onChapterClick={(chapterId) => {
+                    // Navigate to chapter-specific view
+                    navigate(`/study/${subject.id}/chapters/${chapterId}`);
+                  }}
+                />
+              </div>
 
               {/* Compact Action Button */}
               <button

@@ -1,0 +1,43 @@
+2025-07-19 08:37:43 - ollama_generation - INFO - Generating 15 quiz questions for topic: 01113818-425b-489f-849b-3a89f0a7ef81
+2025-07-19 08:37:49 - ollama_generation - INFO - Using Ollama host: http://localhost:11434
+2025-07-19 08:37:49 - ollama_generation - INFO - Generating 15 quiz questions for: Ohm's Law and its Limitations
+2025-07-19 08:37:49 - ollama_generation - INFO - Generating batch 1: 5 questions
+2025-07-19 08:46:00 - ollama_generation - INFO - Batch 1 completed: 5 questions generated
+2025-07-19 08:46:02 - ollama_generation - INFO - Generating batch 2: 5 questions
+2025-07-19 08:52:04 - ollama_generation - INFO - Batch 2 completed: 5 questions generated
+2025-07-19 08:52:06 - ollama_generation - INFO - Generating batch 3: 5 questions
+2025-07-19 08:57:47 - ollama_generation - INFO - Batch 3 completed: 5 questions generated
+2025-07-19 08:57:47 - ollama_generation - INFO - Question 1: Valid (Quality: 0.95)
+2025-07-19 08:57:47 - ollama_generation - INFO - Question 2: Valid (Quality: 0.85)
+2025-07-19 08:57:47 - ollama_generation - INFO - Question 3: Valid (Quality: 0.95)
+2025-07-19 08:57:47 - ollama_generation - INFO - Question 4: Valid (Quality: 1.00)
+2025-07-19 08:57:47 - ollama_generation - INFO - Question 5: Valid (Quality: 1.00)
+2025-07-19 08:57:47 - ollama_generation - WARNING - Question 6: Invalid - ['Duplicate option texts found', 'Consider using more academic vocabulary']
+2025-07-19 08:57:47 - ollama_generation - INFO - Question 7: Valid (Quality: 0.95)
+2025-07-19 08:57:47 - ollama_generation - INFO - Question 8: Valid (Quality: 0.90)
+2025-07-19 08:57:47 - ollama_generation - INFO - Question 9: Valid (Quality: 1.00)
+2025-07-19 08:57:47 - ollama_generation - WARNING - Question 10: Invalid - ['Duplicate option texts found']
+2025-07-19 08:57:47 - ollama_generation - INFO - Question 11: Valid (Quality: 0.95)
+2025-07-19 08:57:47 - ollama_generation - INFO - Question 12: Valid (Quality: 1.00)
+2025-07-19 08:57:47 - ollama_generation - INFO - Question 13: Valid (Quality: 0.90)
+2025-07-19 08:57:47 - ollama_generation - INFO - Question 14: Valid (Quality: 0.90)
+2025-07-19 08:57:47 - ollama_generation - INFO - Question 15: Valid (Quality: 0.95)
+2025-07-19 09:47:44 - ollama_generation - INFO - Generating exam paper for topic: 35d551b6-700f-410d-b9d2-3364dd206d4c (25 marks)
+2025-07-19 09:47:49 - ollama_generation - INFO - Using Ollama host: http://localhost:11434
+2025-07-19 09:47:49 - ollama_generation - INFO - Generating exam paper for: Current, Potential Difference, and Resistance in Circuits (25 marks)
+2025-07-19 09:47:49 - ollama_generation - INFO - Exam generation attempt 1/3
+2025-07-19 09:55:13 - ollama_generation - WARNING - Attempt 1 failed: 3 questions, 17 marks (target: 25)
+2025-07-19 09:55:13 - ollama_generation - INFO - Exam generation attempt 2/3
+2025-07-19 10:03:27 - ollama_generation - ERROR - Error generating exam paper: Question marks (21) don't match total marks (25)
+2025-07-19 10:03:27 - ollama_generation - ERROR - Failed to generate exam paper
+2025-07-19 10:08:37 - ollama_generation - INFO - Generating exam paper for topic: 30424efd-b7df-49d0-85ba-0d94185cdabd (20 marks)
+2025-07-19 10:08:42 - ollama_generation - INFO - Using Ollama host: http://localhost:11434
+2025-07-19 10:08:42 - ollama_generation - INFO - Generating exam paper for: Cell Biology (20 marks)
+2025-07-19 10:08:42 - ollama_generation - INFO - Exam generation attempt 1/3
+2025-07-19 10:15:32 - ollama_generation - WARNING - Attempt 1 failed: 2 questions, 10 marks (target: 20)
+2025-07-19 10:15:32 - ollama_generation - INFO - Exam generation attempt 2/3
+2025-07-19 10:21:12 - ollama_generation - WARNING - Attempt 2 failed: 2 questions, 10 marks (target: 20)
+2025-07-19 10:21:12 - ollama_generation - INFO - Exam generation attempt 3/3
+2025-07-19 10:27:07 - ollama_generation - WARNING - Attempt 3 failed: 2 questions, 10 marks (target: 20)
+2025-07-19 10:27:07 - ollama_generation - ERROR - No valid questions generated for exam paper after all attempts
+2025-07-19 10:27:07 - ollama_generation - ERROR - Failed to generate exam paper

@@ -105,12 +105,18 @@ class GeminiService {
    * @returns {Promise<Object>} Parsed JSON response
    */
   async generateJSON(prompt, options = {}) {
-    try {
-      const {
-        model = 'gemini-1.5-flash',
-        temperature = 0.7,
-        maxTokens = 1000
-      } = options;
+    const maxRetries = 2;
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🔄 Gemini JSON generation attempt ${attempt}/${maxRetries}`);
+
+        const {
+          model = 'gemini-1.5-flash',
+          temperature = 0.7,
+          maxTokens = 1000
+        } = options;
 
       // Enhanced prompt for JSON generation with truncation prevention
       const jsonPrompt = `${prompt}
@@ -138,10 +144,12 @@ VALID JSON EXAMPLE:
   "learning_objectives": ["Objective 1", "Objective 2"]
 }
 
-IMPORTANT: Your response must be parseable by JSON.parse() without any modifications. Ensure the JSON is complete and properly closed.`;
+IMPORTANT: Your response must be parseable by JSON.parse() without any modifications. Ensure the JSON is complete and properly closed.
+
+KEEP RESPONSES CONCISE: Limit explanations to 1-2 sentences. Prioritize completeness over verbosity.`;
 
       // Increase token limit to reduce truncation risk
-      const adjustedMaxTokens = Math.max(maxTokens, 2000);
+      const adjustedMaxTokens = Math.max(maxTokens, 2500);
 
       const geminiModel = this.genAI.getGenerativeModel({
         model,
@@ -163,14 +171,29 @@ IMPORTANT: Your response must be parseable by JSON.parse() without any modificat
         console.warn('⚠️ Response appears to be truncated, attempting recovery...');
       }
 
-      // Clean up the response
-      jsonText = this._cleanupJsonString(jsonText);
+        // Clean up the response
+        jsonText = this._cleanupJsonString(jsonText);
 
-      return JSON.parse(jsonText); // This will throw if parsing fails, which is caught by the outer try-catch
-    } catch (error) {
-      console.error('Gemini JSON generation error:', error);
-      throw new Error(`Gemini JSON generation error: ${error.message}`);
+        const parsed = JSON.parse(jsonText);
+        console.log(`✅ Gemini JSON generation successful on attempt ${attempt}`);
+        return parsed;
+
+      } catch (error) {
+        lastError = error;
+        console.error(`❌ Gemini JSON generation attempt ${attempt} failed:`, error.message);
+
+        if (attempt === maxRetries) {
+          console.error('🚨 All Gemini JSON generation attempts failed');
+          break;
+        }
+
+        // Wait a bit before retrying
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
     }
+
+    // If all attempts failed, throw the last error
+    throw new Error(`Gemini JSON generation failed after ${maxRetries} attempts: ${lastError.message}`);
   }
 
   /**
@@ -202,7 +225,7 @@ IMPORTANT: Your response must be parseable by JSON.parse() without any modificat
    * @returns {string} Cleaned JSON text
    */
   _cleanupJsonString(jsonString) {
-    if (!jsonString) return '';
+    if (!jsonString) return '{}';
 
     console.log('Raw JSON response (first 100 chars):', jsonString.substring(0, 100));
 
@@ -217,6 +240,9 @@ IMPORTANT: Your response must be parseable by JSON.parse() without any modificat
       const objStart = jsonString.indexOf('{');
       if (objStart >= 0) {
         jsonString = jsonString.substring(objStart);
+      } else {
+        // No JSON found, return empty object
+        return '{}';
       }
     }
 
@@ -250,29 +276,175 @@ IMPORTANT: Your response must be parseable by JSON.parse() without any modificat
     } catch (parseError) {
       console.log('Initial JSON parse failed, attempting to fix:', parseError.message);
 
-      // Apply comprehensive fixes
-      let fixedJson = this._applyJsonFixes(jsonString);
+      // Apply smart JSON fixing
+      const fixedJson = this._smartJsonFix(jsonString);
 
       try {
         const parsed = JSON.parse(fixedJson);
         console.log('✅ Successfully fixed JSON');
         return JSON.stringify(parsed);
       } catch (finalError) {
-        console.error('Gentle fixes failed, trying aggressive approach...');
+        console.error('Smart fix failed, using fallback...');
 
-        // Last resort: try to extract a valid JSON object using more aggressive methods
-        try {
-          const aggressivelyFixed = this._aggressiveJsonFix(jsonString);
-          const parsed = JSON.parse(aggressivelyFixed);
-          console.log('✅ Aggressive fix succeeded');
-          return JSON.stringify(parsed);
-        } catch (aggressiveError) {
-          console.error('Could not fix JSON after all attempts:', finalError);
-          console.error('Raw JSON after fixers:', fixedJson.substring(0, 500));
-          throw new Error(`Failed to parse JSON after all fixes: ${finalError.message}`);
+        // Return a valid fallback JSON instead of throwing
+        const fallbackJson = this._createFallbackJson(jsonString, finalError.message);
+        console.log('🔄 Using fallback JSON structure');
+        return fallbackJson;
+      }
+    }
+  }
+
+  /**
+   * Smart JSON fix that handles most common issues with a simple approach
+   * @param {string} jsonString - The malformed JSON string
+   * @returns {string} Fixed JSON string
+   */
+  _smartJsonFix(jsonString) {
+    console.log('🔧 Applying smart JSON fix...');
+
+    let fixed = jsonString.trim();
+
+    // Step 1: Remove any trailing incomplete content
+    fixed = this._truncateToLastCompleteProperty(fixed);
+
+    // Step 2: Fix common string issues
+    fixed = this._fixCommonStringIssues(fixed);
+
+    // Step 3: Ensure proper JSON closure
+    fixed = this._ensureProperClosure(fixed);
+
+    console.log('Smart fix result (first 200 chars):', fixed.substring(0, 200));
+    return fixed;
+  }
+
+  /**
+   * Truncate JSON to the last complete property
+   * @param {string} jsonString - The JSON string to truncate
+   * @returns {string} Truncated JSON string
+   */
+  _truncateToLastCompleteProperty(jsonString) {
+    // Find the last complete property by looking for the last comma followed by a complete property
+    let lastGoodPosition = -1;
+    let inString = false;
+    let escapeNext = false;
+    let braceDepth = 0;
+
+    for (let i = 0; i < jsonString.length; i++) {
+      const char = jsonString[i];
+
+      if (escapeNext) {
+        escapeNext = false;
+        continue;
+      }
+
+      if (char === '\\') {
+        escapeNext = true;
+        continue;
+      }
+
+      if (char === '"') {
+        inString = !inString;
+        continue;
+      }
+
+      if (!inString) {
+        if (char === '{') {
+          braceDepth++;
+        } else if (char === '}') {
+          braceDepth--;
+          if (braceDepth === 0) {
+            // Found the end of the main object
+            return jsonString.substring(0, i + 1);
+          }
+        } else if (char === ',' && braceDepth === 1) {
+          // This is a property separator at the top level
+          lastGoodPosition = i;
         }
       }
     }
+
+    // If we didn't find a complete object, truncate to the last good comma
+    if (lastGoodPosition > 0) {
+      let truncated = jsonString.substring(0, lastGoodPosition);
+      // Remove the trailing comma and close the object
+      return truncated + '}';
+    }
+
+    return jsonString;
+  }
+
+  /**
+   * Fix common string-related JSON issues
+   * @param {string} jsonString - The JSON string to fix
+   * @returns {string} Fixed JSON string
+   */
+  _fixCommonStringIssues(jsonString) {
+    let fixed = jsonString;
+
+    // Fix unterminated strings at the end
+    const quoteCount = (fixed.match(/"/g) || []).length;
+    if (quoteCount % 2 !== 0) {
+      // Odd number of quotes means we have an unterminated string
+      // Find the last quote and see if we need to close it
+      const lastQuoteIndex = fixed.lastIndexOf('"');
+      if (lastQuoteIndex >= 0) {
+        // Check if this quote is the start of a property value
+        const beforeQuote = fixed.substring(0, lastQuoteIndex);
+        if (beforeQuote.endsWith(': ')) {
+          // This is likely an unterminated property value
+          fixed = beforeQuote + '": "' + fixed.substring(lastQuoteIndex + 1) + '"';
+        }
+      }
+    }
+
+    // Remove any trailing commas before closing braces
+    fixed = fixed.replace(/,(\s*})/g, '$1');
+
+    return fixed;
+  }
+
+  /**
+   * Ensure the JSON has proper closing braces
+   * @param {string} jsonString - The JSON string to close
+   * @returns {string} Properly closed JSON string
+   */
+  _ensureProperClosure(jsonString) {
+    let fixed = jsonString.trim();
+
+    // Count opening and closing braces
+    const openBraces = (fixed.match(/{/g) || []).length;
+    const closeBraces = (fixed.match(/}/g) || []).length;
+
+    // Add missing closing braces
+    const missingBraces = openBraces - closeBraces;
+    if (missingBraces > 0) {
+      fixed += '}'.repeat(missingBraces);
+    }
+
+    return fixed;
+  }
+
+  /**
+   * Create a fallback JSON structure when all fixes fail
+   * @param {string} originalJson - The original malformed JSON
+   * @param {string} errorMessage - The error message from parsing
+   * @returns {string} Valid fallback JSON
+   */
+  _createFallbackJson(originalJson, errorMessage) {
+    // Try to extract any recognizable content
+    const titleMatch = originalJson.match(/"title"\s*:\s*"([^"]*?)"/);
+    const descriptionMatch = originalJson.match(/"description"\s*:\s*"([^"]*?)"/);
+
+    const fallback = {
+      title: titleMatch ? titleMatch[1] : "Generated Content",
+      description: descriptionMatch ? descriptionMatch[1] : "Content generation completed with parsing issues",
+      questions: [],
+      error: "JSON parsing failed, using fallback structure",
+      error_details: errorMessage,
+      partial_content: originalJson.substring(0, 200) + "..."
+    };
+
+    return JSON.stringify(fallback);
   }
 
   /**

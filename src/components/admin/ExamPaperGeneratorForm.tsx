@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSubjects } from '../../hooks/useSubjects';
 import { useTopics, Topic } from '../../hooks/useTopics';
+import { useChapters } from '../../hooks/useChapters';
 import { useExamPaperGeneration } from '../../hooks/useExamPaperGeneration';
 import { LLMProvider } from '../../services/llmAdapter';
 import { isChemistryContent, ValidationResult } from '../../utils/chemistryValidator';
@@ -13,6 +14,7 @@ const LLM_PROVIDERS = [
   { id: LLMProvider.OPENAI, name: 'OpenAI' },
   { id: LLMProvider.ANTHROPIC, name: 'Anthropic' },
   { id: LLMProvider.GOOGLE, name: 'Google' },
+  { id: LLMProvider.HUGGINGFACE, name: 'Hugging Face (Ultra Low Cost)' },
   { id: LLMProvider.AZURE, name: 'Azure' },
 ];
 
@@ -20,7 +22,10 @@ const ExamPaperGeneratorForm: React.FC = () => {
   const { subjects } = useSubjects();
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
   const { topics } = useTopics(selectedSubjectId);
+  const { chapters } = useChapters(selectedSubjectId);
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
+  const [selectedChapter, setSelectedChapter] = useState<string>('');
+  const [useChapterMode, setUseChapterMode] = useState<boolean>(false);
   const [questionCount, setQuestionCount] = useState<number>(10);
   const [llmProvider, setLlmProvider] = useState<LLMProvider>(LLMProvider.OPENAI);
   const [isChemistry, setIsChemistry] = useState<boolean>(false);
@@ -37,21 +42,31 @@ const ExamPaperGeneratorForm: React.FC = () => {
   const [snackbarMessage, setSnackbarMessage] = useState<string>('');
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info' | 'warning'>('info');
 
-  // Check if the selected subject or topic is chemistry-related
+  // Check if the selected subject, topic, or chapter is chemistry-related
   useEffect(() => {
-    if (selectedSubjectId && selectedTopic) {
+    if (selectedSubjectId) {
       const subject = subjects.find(s => s.id === selectedSubjectId);
       if (subject) {
         const isChemistrySubject = isChemistryContent(subject.name);
-        const isChemistryTopic = isChemistryContent(selectedTopic.title);
-        setIsChemistry(isChemistrySubject || isChemistryTopic);
-        setShowChemistryHelp(isChemistrySubject || isChemistryTopic);
+        let hasChemistryContent = isChemistrySubject;
+
+        if (useChapterMode && selectedChapter) {
+          const chapter = chapters.find(c => c.id === selectedChapter);
+          if (chapter) {
+            hasChemistryContent = isChemistrySubject || isChemistryContent(chapter.title);
+          }
+        } else if (selectedTopic) {
+          hasChemistryContent = isChemistrySubject || isChemistryContent(selectedTopic.title);
+        }
+
+        setIsChemistry(hasChemistryContent);
+        setShowChemistryHelp(hasChemistryContent);
       }
     } else {
       setIsChemistry(false);
       setShowChemistryHelp(false);
     }
-  }, [selectedSubjectId, selectedTopic, subjects]);
+  }, [selectedSubjectId, selectedTopic, selectedChapter, useChapterMode, subjects, chapters]);
 
   useEffect(() => {
     if (generatedContent?.id) {
@@ -72,24 +87,67 @@ const ExamPaperGeneratorForm: React.FC = () => {
   }, [generatedContent?.id, getContentReviewState]);
 
   const handleGenerate = async () => {
-    if (!selectedTopic || !selectedSubjectId) {
-      alert('Please select a subject and a topic first.');
-      return;
-    }
-    const subject = subjects.find(s => s.id === selectedSubjectId);
-    if (!subject) {
-      alert('Could not find the selected subject.');
-      return;
-    }
-    const newPaper = await generateAndSaveExamPaper(
-      selectedTopic, 
-      subject.name, 
-      questionCount, 
-      llmProvider
-    );
-    if (newPaper) {
-      setGeneratedContent(newPaper);
-      alert(`Successfully generated exam paper: ${newPaper.title}`);
+    if (useChapterMode) {
+      // Chapter-based generation
+      if (!selectedChapter || !selectedSubjectId) {
+        alert('Please select a subject and a chapter first.');
+        return;
+      }
+
+      const subject = subjects.find(s => s.id === selectedSubjectId);
+      if (!subject) {
+        alert('Could not find the selected subject.');
+        return;
+      }
+
+      const chapter = chapters.find(c => c.id === selectedChapter);
+      if (!chapter) {
+        alert('Selected chapter details could not be found.');
+        return;
+      }
+
+      // Get all topics in the chapter
+      const chapterTopics = topics.filter(t => t.chapter_id === selectedChapter);
+      if (chapterTopics.length === 0) {
+        alert('No topics found in the selected chapter.');
+        return;
+      }
+
+      // Use the first topic as the primary topic for the exam paper generation
+      const primaryTopic = chapterTopics[0];
+
+      const newPaper = await generateAndSaveExamPaper(
+        primaryTopic,
+        `${subject.name} - ${chapter.title}`,
+        questionCount,
+        llmProvider
+      );
+
+      if (newPaper) {
+        setGeneratedContent(newPaper);
+        alert(`Successfully generated chapter exam paper: ${newPaper.title}`);
+      }
+    } else {
+      // Topic-based generation (existing logic)
+      if (!selectedTopic || !selectedSubjectId) {
+        alert('Please select a subject and a topic first.');
+        return;
+      }
+      const subject = subjects.find(s => s.id === selectedSubjectId);
+      if (!subject) {
+        alert('Could not find the selected subject.');
+        return;
+      }
+      const newPaper = await generateAndSaveExamPaper(
+        selectedTopic,
+        subject.name,
+        questionCount,
+        llmProvider
+      );
+      if (newPaper) {
+        setGeneratedContent(newPaper);
+        alert(`Successfully generated exam paper: ${newPaper.title}`);
+      }
     }
   };
 
@@ -327,6 +385,107 @@ const ExamPaperGeneratorForm: React.FC = () => {
                 )}
               </div>
 
+              {/* Chapter-based Exam Generation Toggle */}
+              {selectedSubjectId && chapters.length > 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="useChapterMode"
+                      checked={useChapterMode}
+                      onChange={(e) => {
+                        setUseChapterMode(e.target.checked);
+                        if (e.target.checked) {
+                          setSelectedTopic(null); // Clear topic selection when switching to chapter mode
+                        } else {
+                          setSelectedChapter(''); // Clear chapter selection when switching to topic mode
+                        }
+                      }}
+                      className="rounded border-neutral-300 text-primary-600 shadow-sm focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50"
+                      disabled={loading}
+                    />
+                    <label htmlFor="useChapterMode" className="text-sm font-medium text-blue-900">
+                      Generate exam paper from entire chapter
+                    </label>
+                  </div>
+                  <p className="mt-1 text-sm text-blue-700">
+                    Create a comprehensive exam paper using questions from multiple topics within a chapter
+                  </p>
+                </div>
+              )}
+
+              {/* Chapter Selection */}
+              {useChapterMode && selectedSubjectId && chapters.length > 0 && (
+                <div>
+                  <label htmlFor="chapter" className="block text-sm font-medium text-neutral-700 mb-2">
+                    Chapter *
+                  </label>
+                  <div className="relative">
+                    <select
+                      id="chapter"
+                      value={selectedChapter}
+                      onChange={(e) => setSelectedChapter(e.target.value)}
+                      className="w-full px-4 py-3 border border-neutral-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 appearance-none bg-white"
+                      disabled={loading}
+                    >
+                      <option value="">Select a chapter...</option>
+                      {chapters.map(chapter => (
+                        <option key={chapter.id} value={chapter.id}>
+                          {chapter.syllabus_code ? `${chapter.syllabus_code}. ` : ''}{chapter.title}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
+                      <svg className="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                  {selectedChapter && (
+                    <div className="mt-2 p-3 bg-neutral-50 border border-neutral-200 rounded-lg">
+                      {(() => {
+                        const chapter = chapters.find(c => c.id === selectedChapter);
+                        const chapterTopics = topics.filter(t => t.chapter_id === selectedChapter);
+                        return (
+                          <div>
+                            <p className="text-sm text-neutral-700">
+                              <span className="font-medium">Chapter:</span> {chapter?.title}
+                            </p>
+                            <p className="text-sm text-neutral-600 mt-1">
+                              <span className="font-medium">Topics included:</span> {chapterTopics.length} topics
+                            </p>
+                            <p className="text-sm text-neutral-600 mt-1">
+                              <span className="font-medium">Estimated study time:</span> {Math.round((chapter?.estimated_study_time_minutes || 0) / 60)}h {(chapter?.estimated_study_time_minutes || 0) % 60}m
+                            </p>
+                            {chapter?.description && (
+                              <p className="text-sm text-neutral-600 mt-1">{chapter.description}</p>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Chapter Exam Info */}
+              {useChapterMode && selectedChapter && (
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                  <div className="flex items-start space-x-3">
+                    <svg className="w-5 h-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <h4 className="text-sm font-medium text-green-900">Chapter Exam Paper Generation</h4>
+                      <p className="text-sm text-green-700 mt-1">
+                        This will create a comprehensive exam paper drawing questions from all topics within the selected chapter.
+                        The exam will test understanding across the entire chapter scope and provide a thorough assessment.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Question Count */}
               <div>
                 <label htmlFor="questionCount" className="block text-sm font-medium text-neutral-700 mb-2">
@@ -382,9 +541,17 @@ const ExamPaperGeneratorForm: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleGenerate}
-                  disabled={!selectedTopic || !selectedSubjectId || loading || isLoading}
+                  disabled={
+                    !selectedSubjectId ||
+                    (useChapterMode ? !selectedChapter : !selectedTopic) ||
+                    loading ||
+                    isLoading
+                  }
                   className={`flex-1 px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
-                    !selectedTopic || !selectedSubjectId || loading || isLoading
+                    !selectedSubjectId ||
+                    (useChapterMode ? !selectedChapter : !selectedTopic) ||
+                    loading ||
+                    isLoading
                       ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
                       : 'bg-primary-600 text-white hover:bg-primary-700 hover:shadow-medium shadow-soft'
                   }`}

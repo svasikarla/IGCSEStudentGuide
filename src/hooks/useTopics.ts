@@ -5,6 +5,7 @@ export interface Topic {
   id: string;
   subject_id: string;
   parent_topic_id: string | null;
+  chapter_id: string | null; // New: Reference to chapter for hierarchical organization
   title: string;
   slug: string;
   description: string | null;
@@ -19,14 +20,27 @@ export interface Topic {
   syllabus_code?: string | null;
   curriculum_board?: string | null;
   tier?: string | null;
-  major_area?: string | null;
+  major_area?: string | null; // Maintained for backward compatibility
   topic_level?: number | null;
   official_syllabus_ref?: string | null;
   created_at?: string;
   updated_at?: string;
 }
 
-export function useTopics(subjectId: string | null) {
+// Enhanced interface for chapter-based topic organization
+export interface TopicsByChapter {
+  [chapterId: string]: {
+    chapter: {
+      id: string;
+      title: string;
+      syllabus_code: string | null;
+      display_order: number;
+    };
+    topics: Topic[];
+  };
+}
+
+export function useTopics(subjectId: string | null, chapterId?: string | null) {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,11 +58,17 @@ export function useTopics(subjectId: string | null) {
       setLoading(true);
       setError(null);
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('topics')
         .select('*')
-        .eq('subject_id', subjectId)
-        .order('display_order', { ascending: true });
+        .eq('subject_id', subjectId);
+
+      // Filter by chapter if specified
+      if (chapterId) {
+        query = query.eq('chapter_id', chapterId);
+      }
+
+      const { data, error } = await query.order('display_order', { ascending: true });
 
       if (error) {
         throw new Error(error.message);
@@ -83,7 +103,7 @@ export function useTopics(subjectId: string | null) {
     return () => {
       document.removeEventListener('topicsChanged', handleTopicsChanged);
     };
-  }, [subjectId]);
+  }, [subjectId, chapterId]); // Added chapterId dependency
 
   /**
    * Generate a unique slug for a topic within a subject
@@ -334,5 +354,84 @@ export function useTopics(subjectId: string | null) {
     }
   };
 
-  return { topics, loading, error, saveTopics, saveSingleTopic, updateTopicContent, isSaving, saveError };
+  // New chapter-based functions
+  const getTopicsByChapter = async (subjectId: string): Promise<TopicsByChapter> => {
+    try {
+      const { data: chaptersData, error: chaptersError } = await supabase
+        .from('chapters')
+        .select('id, title, syllabus_code, display_order')
+        .eq('subject_id', subjectId)
+        .order('display_order', { ascending: true });
+
+      if (chaptersError) throw chaptersError;
+
+      const { data: topicsData, error: topicsError } = await supabase
+        .from('topics')
+        .select('*')
+        .eq('subject_id', subjectId)
+        .order('display_order', { ascending: true });
+
+      if (topicsError) throw topicsError;
+
+      const result: TopicsByChapter = {};
+
+      // Group topics by chapter
+      chaptersData?.forEach(chapter => {
+        result[chapter.id] = {
+          chapter,
+          topics: topicsData?.filter(topic => topic.chapter_id === chapter.id) || []
+        };
+      });
+
+      return result;
+    } catch (err) {
+      console.error('Error fetching topics by chapter:', err);
+      return {};
+    }
+  };
+
+  const moveTopicToChapter = async (topicId: string, newChapterId: string | null): Promise<boolean> => {
+    try {
+      setIsSaving(true);
+      setSaveError(null);
+
+      const { error } = await supabase
+        .from('topics')
+        .update({ chapter_id: newChapterId })
+        .eq('id', topicId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // Refresh topics
+      await fetchTopics();
+
+      // Dispatch event to notify other components
+      document.dispatchEvent(new Event('topicsChanged'));
+
+      return true;
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to move topic');
+      console.error('Error moving topic to chapter:', err);
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return {
+    topics,
+    loading,
+    error,
+    saveTopics,
+    saveSingleTopic,
+    updateTopicContent,
+    isSaving,
+    saveError,
+    // New chapter-based functions
+    getTopicsByChapter,
+    moveTopicToChapter,
+    fetchTopics // Expose for manual refresh
+  };
 }

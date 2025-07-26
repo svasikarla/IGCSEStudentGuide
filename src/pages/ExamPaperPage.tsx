@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSubjects } from '../hooks/useSubjects';
 import { useTopics } from '../hooks/useTopics';
+import { useChapters } from '../hooks/useChapters';
 import { useExamPapers, ExamPaper, PaperHistoryItem } from '../hooks/useExamPapers';
 import PrintPreview from '../components/PrintPreview';
 import AnswerSheetUploader from '../components/AnswerSheetUploader';
 
 const ExamPaperPage: React.FC = () => {
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
+  const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
+  const [useChapterMode, setUseChapterMode] = useState<boolean>(false);
   const [totalMarks, setTotalMarks] = useState<20 | 50>(20);
   const [generatedPaper, setGeneratedPaper] = useState<ExamPaper | null>(null);
   const [paperHistory, setPaperHistory] = useState<PaperHistoryItem[]>([]);
@@ -15,13 +18,21 @@ const ExamPaperPage: React.FC = () => {
   const [viewingEvaluationId, setViewingEvaluationId] = useState<string | null>(null);
 
   const { subjects, loading: subjectsLoading } = useSubjects();
+  const { chapters, loading: chaptersLoading } = useChapters(selectedSubjectId);
   const { topics, loading: topicsLoading } = useTopics(selectedSubjectId);
   const { generatePaper, getPaperDetails, getPaperHistory, loading: paperLoading, error: paperError } = useExamPapers();
 
-  // Reset topic when subject changes
+  // Reset chapter and topic when subject changes
+  useEffect(() => {
+    setSelectedChapterId(null);
+    setSelectedTopicId(null);
+    setUseChapterMode(false);
+  }, [selectedSubjectId]);
+
+  // Reset topic when chapter changes
   useEffect(() => {
     setSelectedTopicId(null);
-  }, [selectedSubjectId]);
+  }, [selectedChapterId]);
 
   // Function to fetch paper history
   const fetchHistory = useCallback(async () => {
@@ -35,18 +46,65 @@ const ExamPaperPage: React.FC = () => {
   }, [fetchHistory]);
 
   const handleGeneratePaper = async () => {
-    if (!selectedTopicId) {
-      alert('Please select a topic first.');
-      return;
-    }
-    setGeneratedPaper(null);
-    const paperId = await generatePaper(selectedTopicId, totalMarks);
-    if (paperId) {
-      const paperDetails = await getPaperDetails(paperId);
-      if (paperDetails) {
-        setGeneratedPaper(paperDetails);
-        // Refresh history
-        fetchHistory();
+    if (useChapterMode) {
+      // Chapter-based generation
+      if (!selectedChapterId) {
+        alert('Please select a chapter first.');
+        return;
+      }
+
+      let targetTopicId: string;
+
+      if (selectedChapterId === 'ALL') {
+        // Generate from all topics in the subject
+        if (topics.length === 0) {
+          alert('No topics found in the subject.');
+          return;
+        }
+        // Use the first topic as the primary topic for generation
+        targetTopicId = topics[0].id;
+      } else {
+        // Generate from specific chapter
+        if (selectedTopicId) {
+          // Use the selected specific topic within the chapter
+          targetTopicId = selectedTopicId;
+        } else {
+          // Use all topics in the chapter
+          const chapterTopics = topics.filter(topic => topic.chapter_id === selectedChapterId);
+          if (chapterTopics.length === 0) {
+            alert('No topics found in the selected chapter.');
+            return;
+          }
+          // Use the first topic as the primary topic for generation
+          targetTopicId = chapterTopics[0].id;
+        }
+      }
+
+      setGeneratedPaper(null);
+      const paperId = await generatePaper(targetTopicId, totalMarks);
+      if (paperId) {
+        const paperDetails = await getPaperDetails(paperId);
+        if (paperDetails) {
+          setGeneratedPaper(paperDetails);
+          // Refresh history
+          fetchHistory();
+        }
+      }
+    } else {
+      // Topic-based generation (existing logic)
+      if (!selectedTopicId) {
+        alert('Please select a topic first.');
+        return;
+      }
+      setGeneratedPaper(null);
+      const paperId = await generatePaper(selectedTopicId, totalMarks);
+      if (paperId) {
+        const paperDetails = await getPaperDetails(paperId);
+        if (paperDetails) {
+          setGeneratedPaper(paperDetails);
+          // Refresh history
+          fetchHistory();
+        }
       }
     }
   };
@@ -83,22 +141,148 @@ const ExamPaperPage: React.FC = () => {
             </select>
           </div>
 
+          {/* Chapter Mode Toggle */}
+          {selectedSubjectId && chapters.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="useChapterMode"
+                  checked={useChapterMode}
+                  onChange={(e) => {
+                    setUseChapterMode(e.target.checked);
+                    if (e.target.checked) {
+                      setSelectedTopicId(null); // Clear topic selection when switching to chapter mode
+                    } else {
+                      setSelectedChapterId(null); // Clear chapter selection when switching to topic mode
+                    }
+                  }}
+                  className="rounded border-neutral-300 text-primary-600 shadow-sm focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50"
+                />
+                <label htmlFor="useChapterMode" className="text-sm font-medium text-blue-900">
+                  Take exam on entire chapter
+                </label>
+              </div>
+              <p className="mt-1 text-sm text-blue-700">
+                Generate an exam paper covering all topics within a chapter for comprehensive assessment
+              </p>
+            </div>
+          )}
+
+          {/* Chapter Selector */}
+          {useChapterMode && selectedSubjectId && chapters.length > 0 && (
+            <div>
+              <label htmlFor="chapter-select" className="block text-sm font-medium text-gray-700 mb-1">Chapter</label>
+              <select
+                id="chapter-select"
+                value={selectedChapterId || ''}
+                onChange={(e) => setSelectedChapterId(e.target.value || null)}
+                disabled={!selectedSubjectId || chaptersLoading}
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+              >
+                <option value="">{chaptersLoading ? 'Loading...' : 'Select a chapter'}</option>
+                <option value="ALL">ALL - Complete Chapter Assessment</option>
+                {chapters.map(chapter => (
+                  <option key={chapter.id} value={chapter.id}>
+                    {chapter.syllabus_code ? `${chapter.syllabus_code}. ` : ''}{chapter.title}
+                  </option>
+                ))}
+              </select>
+
+              {/* Chapter Preview */}
+              {selectedChapterId && selectedChapterId !== 'ALL' && (
+                <div className="mt-2 p-3 bg-neutral-50 border border-neutral-200 rounded-lg">
+                  {(() => {
+                    const chapter = chapters.find(c => c.id === selectedChapterId);
+                    const chapterTopics = topics.filter(t => t.chapter_id === selectedChapterId);
+                    return (
+                      <div>
+                        <p className="text-sm text-neutral-700">
+                          <span className="font-medium">Chapter:</span> {chapter?.title}
+                        </p>
+                        <p className="text-sm text-neutral-600 mt-1">
+                          <span className="font-medium">Topics included:</span> {chapterTopics.length} topics
+                        </p>
+                        <p className="text-sm text-neutral-600 mt-1">
+                          <span className="font-medium">Estimated study time:</span> {Math.round((chapter?.estimated_study_time_minutes || 0) / 60)}h {(chapter?.estimated_study_time_minutes || 0) % 60}m
+                        </p>
+                        {chapter?.description && (
+                          <p className="text-sm text-neutral-600 mt-1">{chapter.description}</p>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* ALL Chapter Preview */}
+              {selectedChapterId === 'ALL' && (
+                <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-start space-x-3">
+                    <svg className="w-5 h-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <h4 className="text-sm font-medium text-green-900">Complete Subject Assessment</h4>
+                      <p className="text-sm text-green-700 mt-1">
+                        This will create a comprehensive exam covering all chapters and topics in the subject.
+                        Perfect for final assessments and comprehensive review.
+                      </p>
+                      <p className="text-sm text-green-600 mt-1">
+                        <span className="font-medium">Total chapters:</span> {chapters.length} |
+                        <span className="font-medium"> Total topics:</span> {topics.length}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Topic Selector */}
-          <div>
-            <label htmlFor="topic-select" className="block text-sm font-medium text-gray-700 mb-1">Topic</label>
-            <select
-              id="topic-select"
-              value={selectedTopicId || ''}
-              onChange={(e) => setSelectedTopicId(e.target.value || null)}
-              disabled={!selectedSubjectId || topicsLoading}
-              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
-            >
-              <option value="">{topicsLoading ? 'Loading...' : 'Select a topic'}</option>
-              {topics.map(topic => (
-                <option key={topic.id} value={topic.id}>{topic.title}</option>
-              ))}
-            </select>
-          </div>
+          {!useChapterMode && (
+            <div>
+              <label htmlFor="topic-select" className="block text-sm font-medium text-gray-700 mb-1">Topic</label>
+              <select
+                id="topic-select"
+                value={selectedTopicId || ''}
+                onChange={(e) => setSelectedTopicId(e.target.value || null)}
+                disabled={!selectedSubjectId || topicsLoading}
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+              >
+                <option value="">{topicsLoading ? 'Loading...' : 'Select a topic'}</option>
+                {topics.map(topic => (
+                  <option key={topic.id} value={topic.id}>{topic.title}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Chapter Topics Selector (when specific chapter is selected) */}
+          {useChapterMode && selectedChapterId && selectedChapterId !== 'ALL' && (
+            <div>
+              <label htmlFor="chapter-topic-select" className="block text-sm font-medium text-gray-700 mb-1">
+                Topic (Optional - Leave blank for all topics in chapter)
+              </label>
+              <select
+                id="chapter-topic-select"
+                value={selectedTopicId || ''}
+                onChange={(e) => setSelectedTopicId(e.target.value || null)}
+                disabled={!selectedChapterId || topicsLoading}
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+              >
+                <option value="">All topics in chapter</option>
+                {topics
+                  .filter(topic => topic.chapter_id === selectedChapterId)
+                  .map(topic => (
+                    <option key={topic.id} value={topic.id}>{topic.title}</option>
+                  ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                Select a specific topic within the chapter, or leave blank to include all topics
+              </p>
+            </div>
+          )}
 
           {/* Marks Selector */}
           <div>
@@ -119,9 +303,15 @@ const ExamPaperPage: React.FC = () => {
           <div>
             <button
               onClick={handleGeneratePaper}
-              disabled={!selectedTopicId || paperLoading}
+              disabled={
+                paperLoading ||
+                (!useChapterMode && !selectedTopicId) ||
+                (useChapterMode && !selectedChapterId)
+              }
               className={`w-full px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
-                !selectedTopicId || paperLoading
+                paperLoading ||
+                (!useChapterMode && !selectedTopicId) ||
+                (useChapterMode && !selectedChapterId)
                   ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
                   : 'bg-primary-600 text-white hover:bg-primary-700 hover:shadow-medium shadow-soft'
               }`}

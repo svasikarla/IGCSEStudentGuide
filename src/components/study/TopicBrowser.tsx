@@ -1,12 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import { Topic } from '../../hooks/useTopics';
+import { Chapter } from '../../types/chapter';
+import { useChapters } from '../../hooks/useChapters';
 
 interface TopicBrowserProps {
   topics: Topic[];
+  subjectId?: string; // Add subject ID for chapter support
   selectedTopicId?: string | null;
   onTopicSelect: (topicId: string) => void;
   loading?: boolean;
   className?: string;
+  useChapterView?: boolean; // Toggle between chapter and legacy view
 }
 
 interface GroupedTopics {
@@ -15,13 +19,23 @@ interface GroupedTopics {
   };
 }
 
+interface ChapterGroupedTopics {
+  [chapterId: string]: {
+    chapter: Chapter;
+    topics: Topic[];
+  };
+}
+
 const TopicBrowser: React.FC<TopicBrowserProps> = ({
   topics,
+  subjectId,
   selectedTopicId,
   onTopicSelect,
   loading = false,
-  className = ''
+  className = '',
+  useChapterView = true
 }) => {
+  const { chapters } = useChapters(subjectId || null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState<number | null>(null);
   const [selectedStudyTime, setSelectedStudyTime] = useState<string>('all');
@@ -54,6 +68,37 @@ const TopicBrowser: React.FC<TopicBrowserProps> = ({
 
     return grouped;
   }, [topics]);
+
+  // Group topics by chapters (new hierarchical view)
+  const chapterGroupedTopics = useMemo(() => {
+    if (!useChapterView || chapters.length === 0) {
+      return {};
+    }
+
+    const grouped: ChapterGroupedTopics = {};
+
+    // Initialize with all chapters
+    chapters.forEach(chapter => {
+      grouped[chapter.id] = {
+        chapter,
+        topics: []
+      };
+    });
+
+    // Add topics to their respective chapters
+    topics.forEach(topic => {
+      if (topic.chapter_id && grouped[topic.chapter_id]) {
+        grouped[topic.chapter_id].topics.push(topic);
+      }
+    });
+
+    // Sort topics within each chapter
+    Object.keys(grouped).forEach(chapterId => {
+      grouped[chapterId].topics.sort((a, b) => a.display_order - b.display_order || a.title.localeCompare(b.title));
+    });
+
+    return grouped;
+  }, [topics, chapters, useChapterView]);
 
   // Filter topics based on search and filters
   const filteredTopics = useMemo(() => {
@@ -234,6 +279,9 @@ const TopicBrowser: React.FC<TopicBrowserProps> = ({
         {/* Results Summary */}
         <div className="mt-4 text-sm text-neutral-600">
           Showing {filteredTopics.length} of {topics.length} topics
+          {useChapterView && chapters.length > 0 && (
+            <span className="ml-2 text-primary-600">• Chapter view</span>
+          )}
         </div>
       </div>
 
@@ -257,7 +305,111 @@ const TopicBrowser: React.FC<TopicBrowserProps> = ({
               Clear all filters
             </button>
           </div>
+        ) : useChapterView && chapters.length > 0 ? (
+          // Chapter-based view
+          <div className="space-y-1">
+            {Object.keys(chapterGroupedTopics)
+              .sort((a, b) => {
+                const chapterA = chapterGroupedTopics[a].chapter;
+                const chapterB = chapterGroupedTopics[b].chapter;
+                return chapterA.display_order - chapterB.display_order;
+              })
+              .map((chapterId) => {
+                const { chapter, topics: chapterTopics } = chapterGroupedTopics[chapterId];
+                const filteredChapterTopics = chapterTopics.filter(topic => {
+                  // Apply the same filters as the original filteredTopics logic
+                  const matchesSearch = searchTerm === '' ||
+                    topic.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    (topic.description && topic.description.toLowerCase().includes(searchTerm.toLowerCase()));
+
+                  const matchesDifficulty = selectedDifficulty === null || topic.difficulty_level === selectedDifficulty;
+
+                  const matchesStudyTime = selectedStudyTime === 'all' ||
+                    (selectedStudyTime === 'short' && topic.estimated_study_time_minutes <= 30) ||
+                    (selectedStudyTime === 'medium' && topic.estimated_study_time_minutes > 30 && topic.estimated_study_time_minutes <= 60) ||
+                    (selectedStudyTime === 'long' && topic.estimated_study_time_minutes > 60);
+
+                  const matchesContent = contentFilter === 'all' ||
+                    (contentFilter === 'with-content' && topic.content && topic.content.trim().length > 0) ||
+                    (contentFilter === 'without-content' && (!topic.content || topic.content.trim().length === 0));
+
+                  return matchesSearch && matchesDifficulty && matchesStudyTime && matchesContent;
+                });
+
+                if (filteredChapterTopics.length === 0) return null;
+
+                const isExpanded = expandedAreas.has(chapterId);
+                const topicsWithContent = filteredChapterTopics.filter(t => t.content && t.content.trim().length > 0).length;
+
+                return (
+                  <div key={chapterId}>
+                    {/* Chapter Header */}
+                    <button
+                      onClick={() => toggleArea(chapterId)}
+                      className="w-full flex items-center justify-between p-3 hover:bg-neutral-50 transition-colors border-l-4"
+                      style={{ borderLeftColor: chapter.color_hex }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <svg
+                          className={`w-4 h-4 text-neutral-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                        <div className="flex items-center gap-2">
+                          {chapter.syllabus_code && (
+                            <span className="text-sm font-mono text-neutral-600 bg-neutral-100 px-2 py-0.5 rounded">
+                              {chapter.syllabus_code}
+                            </span>
+                          )}
+                          <span className="font-medium text-neutral-900">{chapter.title}</span>
+                        </div>
+                        <span className="text-sm text-neutral-500">
+                          ({filteredChapterTopics.length} topics, {topicsWithContent} with content)
+                        </span>
+                      </div>
+                    </button>
+
+                    {/* Chapter Topics */}
+                    {isExpanded && (
+                      <div className="ml-6 space-y-1">
+                        {filteredChapterTopics.map((topic) => (
+                          <button
+                            key={topic.id}
+                            onClick={() => onTopicSelect(topic.id)}
+                            className={`w-full text-left p-3 rounded-lg transition-colors ${
+                              selectedTopicId === topic.id
+                                ? 'bg-primary-50 border border-primary-200'
+                                : 'hover:bg-neutral-50 border border-transparent'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h4 className="font-medium text-neutral-900 mb-1">{topic.title}</h4>
+                                {topic.description && (
+                                  <p className="text-sm text-neutral-600 mb-2 line-clamp-2">{topic.description}</p>
+                                )}
+                                <div className="flex items-center gap-4 text-xs text-neutral-500">
+                                  <span>Level {topic.difficulty_level}</span>
+                                  <span>{topic.estimated_study_time_minutes} min</span>
+                                  {topic.content && topic.content.trim().length > 0 && (
+                                    <span className="text-green-600">✓ Content</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }).filter(Boolean)}
+          </div>
         ) : (
+          // Legacy major area view
           <div className="space-y-1">
             {Object.keys(filteredGroupedTopics)
               .sort()

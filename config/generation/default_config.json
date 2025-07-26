@@ -1,0 +1,83 @@
+{
+  "generation": {
+    "min_questions_per_topic": 20,
+    "target_questions_per_topic": 50,
+    "batch_size": 10,
+    "max_daily_generations": 100,
+    "generation_hours": [2, 3, 4],
+    "timeout_seconds": 120,
+    "max_retries": 3,
+    "temperature": 0.7,
+    "max_tokens": 2000
+  },
+  "models": {
+    "quiz_questions": "gemma3:4b",
+    "exam_papers": "gemma3:4b",
+    "simple_questions": "gemma3:4b",
+    "complex_topics": "gemma3:4b"
+  },
+  "subjects_priority": [
+    "Mathematics",
+    "Physics",
+    "Chemistry", 
+    "Biology",
+    "English Language",
+    "Geography",
+    "History",
+    "Computer Science",
+    "Economics",
+    "Business Studies"
+  ],
+  "quality_thresholds": {
+    "min_question_length": 20,
+    "max_question_length": 500,
+    "min_explanation_length": 30,
+    "required_options_count": 4,
+    "minimum_quality_score": 0.7
+  },
+  "batch": {
+    "max_concurrent_generations": 3,
+    "delay_between_generations": 2.0,
+    "max_daily_generations": 100,
+    "min_questions_per_topic": 20,
+    "target_questions_per_topic": 50,
+    "quality_threshold": 0.7,
+    "retry_failed_generations": true,
+    "max_retries_per_topic": 2
+  },
+  "scheduler": {
+    "enabled": true,
+    "frequency": "daily",
+    "start_time": "02:00",
+    "max_runtime_minutes": 120,
+    "subjects_rotation": [
+      "Mathematics",
+      "Physics",
+      "Chemistry",
+      "Biology",
+      "English Language",
+      "Geography",
+      "History"
+    ]
+  },
+  "validation": {
+    "enable_quality_validation": true,
+    "enable_academic_validation": true,
+    "enable_length_validation": true,
+    "enable_format_validation": true,
+    "strict_mode": false
+  },
+  "logging": {
+    "level": "INFO",
+    "file_rotation": true,
+    "max_file_size_mb": 10,
+    "backup_count": 5,
+    "console_output": true
+  },
+  "monitoring": {
+    "enable_performance_tracking": true,
+    "enable_quality_tracking": true,
+    "enable_error_tracking": true,
+    "save_generation_stats": true
+  }
+}

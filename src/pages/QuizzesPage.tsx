@@ -1,72 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuizAttempts, Quiz, QuizWithQuestions } from '../hooks/useQuizAttempts';
+import { useEnhancedQuizzes, QuizFilters as QuizFiltersType } from '../hooks/useEnhancedQuizzes';
 import QuizPlayer from '../components/quiz/QuizPlayer';
 import QuizResults from '../components/quiz/QuizResults';
+import QuizFilters from '../components/quiz/QuizFilters';
+import QuizStatsDashboard from '../components/quiz/QuizStatsDashboard';
+import SubjectQuizGroup from '../components/quiz/SubjectQuizGroup';
+import EnhancedQuizCard from '../components/quiz/EnhancedQuizCard';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
 const QuizzesPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { fetchQuizzes, fetchQuizWithQuestions, getUserQuizStats, loading, error } = useQuizAttempts();
-  
-  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const { fetchQuizWithQuestions } = useQuizAttempts();
+  const {
+    quizzes,
+    statistics,
+    loading,
+    error,
+    applyFilters,
+    getQuizzesBySubject,
+    getAvailableSubjects,
+    refreshData
+  } = useEnhancedQuizzes();
+
   const [selectedQuiz, setSelectedQuiz] = useState<QuizWithQuestions | null>(null);
-  const [quizStats, setQuizStats] = useState<{
-    totalQuizzesTaken: number;
-    quizzesTakenThisWeek: number;
-    averageScore: number;
-  } | null>(null);
-  const [bestSubject, setBestSubject] = useState<string>('--');
   const [currentAttemptId, setCurrentAttemptId] = useState<string | null>(null);
-  const [loadingQuizzes, setLoadingQuizzes] = useState(true);
-  const [loadingStats, setLoadingStats] = useState(true);
   const [view, setView] = useState<'list' | 'quiz' | 'results'>('list');
+  const [viewMode, setViewMode] = useState<'grouped' | 'grid'>('grouped');
+  const [showFilters, setShowFilters] = useState(false);
 
-  // Fetch quizzes on component mount
-  useEffect(() => {
-    const loadQuizzes = async () => {
-      setLoadingQuizzes(true);
-      const quizData = await fetchQuizzes();
-      setQuizzes(quizData);
-      setLoadingQuizzes(false);
-    };
-    
-    loadQuizzes();
-  }, [fetchQuizzes]);
+  // Handle filter changes
+  const handleFiltersChange = (filters: QuizFiltersType) => {
+    applyFilters(filters);
+  };
 
-  // Fetch user quiz stats
-  useEffect(() => {
-    const loadStats = async () => {
-      if (!user) return;
-      
-      setLoadingStats(true);
-      
-      // Get quiz stats
-      const stats = await getUserQuizStats();
-      setQuizStats(stats);
-      
-      // Get best subject (if any attempts exist)
-      try {
-        const { data: subjectData, error: subjectError } = await supabase.rpc(
-          'get_best_subject_performance',
-          { p_user_id: user.id }
-        );
-        
-        if (subjectError) throw new Error(subjectError.message);
-        if (subjectData && subjectData.length > 0) {
-          setBestSubject(subjectData[0].subject_name || '--');
-        }
-      } catch (err) {
-        console.error('Error fetching best subject:', err);
-      }
-      
-      setLoadingStats(false);
-    };
-    
-    loadStats();
-  }, [user, getUserQuizStats]);
+  // Refresh data when quiz is completed
+  const handleQuizCompleted = () => {
+    refreshData();
+  };
 
   // Handle starting a quiz
   const handleStartQuiz = async (quizId: string) => {
@@ -81,6 +55,7 @@ const QuizzesPage: React.FC = () => {
   const handleQuizComplete = (attemptId: string) => {
     setCurrentAttemptId(attemptId);
     setView('results');
+    handleQuizCompleted(); // Refresh data to update statistics
   };
 
   // Handle retaking a quiz
@@ -145,132 +120,151 @@ const QuizzesPage: React.FC = () => {
 
   // Render quiz list (default view)
   return (
-    <div>
-      <div className="mb-8">
-        <h1>Practice Quizzes</h1>
-        <p className="text-neutral-600">
-          Test your knowledge with quizzes designed to reinforce learning and identify gaps.
-        </p>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold mb-2">Quizzes Taken</h3>
-          {loadingStats ? (
-            <div className="animate-pulse h-8 w-16 bg-gray-200 rounded"></div>
-          ) : (
-            <>
-              <p className="text-3xl font-bold text-primary-600">
-                {quizStats?.quizzesTakenThisWeek || 0}
-              </p>
-              <p className="text-neutral-500 text-sm mt-1">This week</p>
-            </>
-          )}
-        </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold mb-2">Average Score</h3>
-          {loadingStats ? (
-            <div className="animate-pulse h-8 w-16 bg-gray-200 rounded"></div>
-          ) : (
-            <>
-              <p className="text-3xl font-bold text-primary-600">
-                {quizStats?.averageScore ? `${quizStats.averageScore.toFixed(1)}%` : '--%'}
-              </p>
-              <p className="text-neutral-500 text-sm mt-1">Across all quizzes</p>
-            </>
-          )}
-        </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold mb-2">Best Subject</h3>
-          {loadingStats ? (
-            <div className="animate-pulse h-8 w-16 bg-gray-200 rounded"></div>
-          ) : (
-            <>
-              <p className="text-3xl font-bold text-primary-600">{bestSubject}</p>
-              <p className="text-neutral-500 text-sm mt-1">Highest average</p>
-            </>
-          )}
-        </div>
-      </div>
-      
-      {loadingQuizzes ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="bg-white p-6 rounded-lg shadow-md animate-pulse">
-              <div className="h-5 bg-gray-200 rounded w-3/4 mb-3"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
-              <div className="h-10 bg-gray-200 rounded w-full"></div>
-            </div>
-          ))}
-        </div>
-      ) : quizzes.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {quizzes.map((quiz) => (
-            <div key={quiz.id} className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <div className="flex justify-between items-start mb-3">
-                <h3 className="text-lg font-semibold">{quiz.title}</h3>
-                <span className={`px-2 py-1 text-xs rounded-full ${
-                  quiz.difficulty_level <= 2 ? 'bg-green-100 text-green-800' :
-                  quiz.difficulty_level <= 4 ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-red-100 text-red-800'
-                }`}>
-                  {quiz.difficulty_level <= 2 ? 'Easy' : 
-                   quiz.difficulty_level <= 4 ? 'Medium' : 'Hard'}
-                </span>
-              </div>
-              <p className="text-neutral-600 mb-2">{quiz.description}</p>
-              <p className="text-sm text-neutral-500 mb-4">Time limit: {quiz.time_limit_minutes} minutes</p>
-              <button 
-                onClick={() => handleStartQuiz(quiz.id)}
-                className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out"
-              >
-                Start Quiz
-              </button>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-          <h3 className="text-lg font-semibold mb-2">No Quizzes Available</h3>
-          <p className="text-neutral-600">
-            There are currently no quizzes available. Please check back later or contact your teacher.
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-neutral-900">Practice Quizzes</h1>
+          <p className="text-neutral-600 mt-2">
+            Test your knowledge with quizzes designed to reinforce learning and identify gaps.
           </p>
         </div>
-      )}
-      
-      {/* Features section - keep this to show upcoming features */}
-      <div className="bg-secondary-50 p-6 rounded-lg">
-        <h2 className="text-xl font-semibold mb-2">Quiz Features</h2>
-        <ul className="space-y-2 text-neutral-600">
-          <li className="flex items-center">
-            <svg className="w-5 h-5 text-secondary-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+
+        {/* View Controls */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center bg-neutral-100 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('grouped')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                viewMode === 'grouped'
+                  ? 'bg-white text-neutral-900 shadow-sm'
+                  : 'text-neutral-600 hover:text-neutral-900'
+              }`}
+            >
+              <svg className="w-4 h-4 mr-1.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14-7H5m14 14H5" />
+              </svg>
+              Grouped
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                viewMode === 'grid'
+                  ? 'bg-white text-neutral-900 shadow-sm'
+                  : 'text-neutral-600 hover:text-neutral-900'
+              }`}
+            >
+              <svg className="w-4 h-4 mr-1.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+              </svg>
+              Grid
+            </button>
+          </div>
+
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
+              showFilters
+                ? 'bg-primary-50 text-primary-700 border-primary-200'
+                : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-50'
+            }`}
+          >
+            <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
             </svg>
-            Interactive multiple-choice questions
-          </li>
-          <li className="flex items-center">
-            <svg className="w-5 h-5 text-secondary-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-            Immediate feedback and explanations
-          </li>
-          <li className="flex items-center">
-            <svg className="w-5 h-5 text-secondary-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-            Detailed performance analytics
-          </li>
-          <li className="flex items-center">
-            <svg className="w-5 h-5 text-secondary-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-            Progress tracking across subjects
-          </li>
-        </ul>
+            Filters
+          </button>
+        </div>
       </div>
+
+      {/* Statistics Dashboard */}
+      <QuizStatsDashboard statistics={statistics} loading={loading} />
+
+      {/* Filters */}
+      {showFilters && (
+        <QuizFilters
+          subjects={getAvailableSubjects()}
+          onFiltersChange={handleFiltersChange}
+          totalQuizzes={quizzes.length}
+          filteredCount={quizzes.length}
+        />
+      )}
+
+      {/* Quiz Content */}
+      {loading ? (
+        <div className="space-y-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-white p-6 rounded-lg border border-neutral-200 animate-pulse">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-4 h-4 bg-neutral-200 rounded-full"></div>
+                <div className="h-6 bg-neutral-200 rounded w-48"></div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[1, 2, 3].map((j) => (
+                  <div key={j} className="bg-neutral-50 p-4 rounded-lg">
+                    <div className="h-5 bg-neutral-200 rounded w-3/4 mb-3"></div>
+                    <div className="h-4 bg-neutral-200 rounded w-1/2 mb-2"></div>
+                    <div className="h-10 bg-neutral-200 rounded w-full"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : error ? (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="flex items-center gap-2 text-red-800 mb-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="font-medium">Error loading quizzes</span>
+          </div>
+          <p className="text-red-700">{error}</p>
+        </div>
+      ) : quizzes.length > 0 ? (
+        viewMode === 'grouped' ? (
+          // Grouped by Subject View
+          <div className="space-y-6">
+            {getQuizzesBySubject().map((subjectGroup) => (
+              <SubjectQuizGroup
+                key={subjectGroup.subject_id}
+                {...subjectGroup}
+                onStartQuiz={handleStartQuiz}
+              />
+            ))}
+          </div>
+        ) : (
+          // Grid View
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {quizzes.map((quiz) => (
+              <EnhancedQuizCard
+                key={quiz.id}
+                quiz={quiz}
+                onStartQuiz={handleStartQuiz}
+                showSubjectInfo={true}
+              />
+            ))}
+          </div>
+        )
+      ) : (
+        <div className="bg-white p-12 rounded-lg border border-neutral-200 text-center">
+          <svg className="w-16 h-16 mx-auto mb-4 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <h3 className="text-lg font-semibold text-neutral-900 mb-2">No Quizzes Available</h3>
+          <p className="text-neutral-600 mb-4">
+            There are currently no quizzes available that match your criteria.
+          </p>
+          {showFilters && (
+            <button
+              onClick={() => handleFiltersChange({})}
+              className="text-primary-600 hover:text-primary-700 font-medium"
+            >
+              Clear all filters
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

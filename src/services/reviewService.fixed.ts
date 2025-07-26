@@ -170,10 +170,11 @@ export const reviewService = {
     };
 
     try {
-      const { data, error } = await supabase.rpc('get_review_statistics');
+      console.log('🔄 UPDATED: Using get_generation_stats function');
+      const { data, error } = await supabase.rpc('get_generation_stats', { days_back: 30 });
 
       if (error) {
-        console.error('Error fetching review statistics:', error);
+        console.error('Error fetching generation statistics:', error);
         return initialStats;
       }
 

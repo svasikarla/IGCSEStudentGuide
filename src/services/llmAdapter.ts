@@ -20,6 +20,7 @@ export enum LLMProvider {
   AZURE = 'azure',
   ANTHROPIC = 'anthropic',
   GOOGLE = 'google',
+  HUGGINGFACE = 'huggingface',
   CUSTOM = 'custom'
 }
 
@@ -288,6 +289,13 @@ export class GoogleAdapter extends BaseLLMAdapter {
   }
 }
 
+// Hugging Face adapter
+export class HuggingFaceAdapter extends BaseLLMAdapter {
+  constructor(apiBaseUrl?: string) {
+    super(apiBaseUrl, LLMProvider.HUGGINGFACE);
+  }
+}
+
 // Factory function to create the appropriate adapter based on provider
 export function createLLMAdapter(provider: LLMProvider = LLMProvider.OPENAI, apiBaseUrl?: string): ILLMAdapter {
   switch (provider) {
@@ -297,6 +305,8 @@ export function createLLMAdapter(provider: LLMProvider = LLMProvider.OPENAI, api
       return new AnthropicAdapter(apiBaseUrl);
     case LLMProvider.GOOGLE:
       return new GoogleAdapter(apiBaseUrl);
+    case LLMProvider.HUGGINGFACE:
+      return new HuggingFaceAdapter(apiBaseUrl);
     case LLMProvider.OPENAI:
     default:
       return new OpenAIAdapter(apiBaseUrl);

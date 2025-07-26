@@ -1,0 +1,289 @@
+{
+  "description": "Configuration file for educational content sources",
+  "version": "1.0",
+  "last_updated": "2025-01-13",
+  "sources": [
+    {
+      "url": "https://www.khanacademy.org/math/algebra-basics",
+      "source_type": "khan_academy",
+      "subject": "Mathematics",
+      "syllabus_code": "0580",
+      "difficulty_level": 2,
+      "max_pages": 5,
+      "delay_seconds": 2.0,
+      "include_patterns": ["algebra", "equation", "linear"],
+      "exclude_patterns": ["video", "exercise"]
+    },
+    {
+      "url": "https://www.khanacademy.org/science/physics/forces-newtons-laws",
+      "source_type": "khan_academy",
+      "subject": "Physics",
+      "syllabus_code": "0625",
+      "difficulty_level": 3,
+      "max_pages": 5,
+      "delay_seconds": 2.0,
+      "include_patterns": ["force", "newton", "motion"],
+      "exclude_patterns": ["video", "exercise"]
+    },
+    {
+      "url": "https://www.khanacademy.org/science/chemistry/atomic-structure-and-properties",
+      "source_type": "khan_academy",
+      "subject": "Chemistry",
+      "syllabus_code": "0620",
+      "difficulty_level": 3,
+      "max_pages": 5,
+      "delay_seconds": 2.0,
+      "include_patterns": ["atom", "element", "periodic"],
+      "exclude_patterns": ["video", "exercise"]
+    },
+    {
+      "url": "https://www.khanacademy.org/science/biology/intro-to-biology",
+      "source_type": "khan_academy",
+      "subject": "Biology",
+      "syllabus_code": "0610",
+      "difficulty_level": 2,
+      "max_pages": 5,
+      "delay_seconds": 2.0,
+      "include_patterns": ["cell", "organism", "life"],
+      "exclude_patterns": ["video", "exercise"]
+    },
+    {
+      "url": "https://flexbooks.ck12.org/cbook/ck-12-middle-school-math-concepts-grade-8/",
+      "source_type": "ck12",
+      "subject": "Mathematics",
+      "syllabus_code": "0580",
+      "difficulty_level": 2,
+      "max_pages": 10,
+      "delay_seconds": 3.0,
+      "include_patterns": ["algebra", "geometry", "number"],
+      "exclude_patterns": ["assessment", "quiz"]
+    },
+    {
+      "url": "https://flexbooks.ck12.org/cbook/ck-12-physical-science-concepts-for-middle-school/",
+      "source_type": "ck12",
+      "subject": "Physics",
+      "syllabus_code": "0625",
+      "difficulty_level": 2,
+      "max_pages": 10,
+      "delay_seconds": 3.0,
+      "include_patterns": ["motion", "energy", "force"],
+      "exclude_patterns": ["assessment", "quiz"]
+    },
+    {
+      "url": "https://flexbooks.ck12.org/cbook/ck-12-chemistry-concepts-intermediate/",
+      "source_type": "ck12",
+      "subject": "Chemistry",
+      "syllabus_code": "0620",
+      "difficulty_level": 3,
+      "max_pages": 10,
+      "delay_seconds": 3.0,
+      "include_patterns": ["chemical", "reaction", "compound"],
+      "exclude_patterns": ["assessment", "quiz"]
+    },
+    {
+      "url": "https://flexbooks.ck12.org/cbook/ck-12-biology-concepts/",
+      "source_type": "ck12",
+      "subject": "Biology",
+      "syllabus_code": "0610",
+      "difficulty_level": 3,
+      "max_pages": 10,
+      "delay_seconds": 3.0,
+      "include_patterns": ["biology", "organism", "ecosystem"],
+      "exclude_patterns": ["assessment", "quiz"]
+    },
+    {
+      "url": "https://en.wikipedia.org/wiki/Photosynthesis",
+      "source_type": "wikipedia",
+      "subject": "Biology",
+      "syllabus_code": "0610",
+      "difficulty_level": 3,
+      "max_pages": 1,
+      "delay_seconds": 1.0,
+      "include_patterns": ["photosynthesis", "chlorophyll", "glucose"],
+      "exclude_patterns": ["references", "external links"]
+    },
+    {
+      "url": "https://en.wikipedia.org/wiki/Newton%27s_laws_of_motion",
+      "source_type": "wikipedia",
+      "subject": "Physics",
+      "syllabus_code": "0625",
+      "difficulty_level": 3,
+      "max_pages": 1,
+      "delay_seconds": 1.0,
+      "include_patterns": ["newton", "force", "acceleration"],
+      "exclude_patterns": ["references", "external links"]
+    },
+    {
+      "url": "https://en.wikipedia.org/wiki/Periodic_table",
+      "source_type": "wikipedia",
+      "subject": "Chemistry",
+      "syllabus_code": "0620",
+      "difficulty_level": 3,
+      "max_pages": 1,
+      "delay_seconds": 1.0,
+      "include_patterns": ["periodic", "element", "atomic"],
+      "exclude_patterns": ["references", "external links"]
+    },
+    {
+      "url": "https://en.wikipedia.org/wiki/Quadratic_equation",
+      "source_type": "wikipedia",
+      "subject": "Mathematics",
+      "syllabus_code": "0580",
+      "difficulty_level": 4,
+      "max_pages": 1,
+      "delay_seconds": 1.0,
+      "include_patterns": ["quadratic", "equation", "formula"],
+      "exclude_patterns": ["references", "external links"]
+    }
+  ],
+  "processing_rules": {
+    "content_validation": {
+      "min_length": 100,
+      "max_length": 50000,
+      "required_keywords_by_subject": {
+        "Mathematics": ["equation", "formula", "calculate", "solve", "number"],
+        "Physics": ["force", "energy", "motion", "velocity", "acceleration"],
+        "Chemistry": ["element", "compound", "reaction", "atom", "molecule"],
+        "Biology": ["cell", "organism", "life", "process", "system"],
+        "Economics": ["market", "economy", "demand", "supply", "price"],
+        "English": ["language", "literature", "writing", "reading", "grammar"]
+      }
+    },
+    "license_validation": {
+      "allowed_licenses": ["CC BY", "CC BY-SA", "CC BY-NC", "Public Domain"],
+      "check_copyright": true,
+      "attribution_required": true
+    },
+    "quality_filters": {
+      "exclude_if_contains": [
+        "copyright violation",
+        "all rights reserved",
+        "unauthorized reproduction",
+        "proprietary content"
+      ],
+      "require_educational_indicators": [
+        "learn", "study", "understand", "concept", "principle",
+        "definition", "example", "practice", "exercise"
+      ]
+    }
+  },
+  "syllabus_mapping": {
+    "Cambridge IGCSE": {
+      "0580": {
+        "name": "Mathematics",
+        "major_areas": [
+          "Number",
+          "Algebra",
+          "Geometry",
+          "Mensuration",
+          "Coordinate Geometry",
+          "Trigonometry",
+          "Matrices and Transformations",
+          "Probability",
+          "Statistics"
+        ]
+      },
+      "0625": {
+        "name": "Physics",
+        "major_areas": [
+          "Motion, forces and energy",
+          "Thermal physics",
+          "Waves",
+          "Electricity and magnetism",
+          "Nuclear physics",
+          "Space physics"
+        ]
+      },
+      "0620": {
+        "name": "Chemistry",
+        "major_areas": [
+          "The particulate nature of matter",
+          "Experimental techniques",
+          "Atoms, elements and compounds",
+          "Stoichiometry",
+          "Electricity and chemistry",
+          "Chemical energetics",
+          "Chemical reactions",
+          "Acids, bases and salts",
+          "The Periodic Table",
+          "Metals",
+          "Chemistry of the environment",
+          "Organic chemistry"
+        ]
+      },
+      "0610": {
+        "name": "Biology",
+        "major_areas": [
+          "Characteristics and classification of living organisms",
+          "Organisation and maintenance of the organism",
+          "Movement in and out of cells",
+          "Biological molecules",
+          "Enzymes",
+          "Plant nutrition",
+          "Human nutrition",
+          "Transport in plants",
+          "Transport in animals",
+          "Diseases and immunity",
+          "Gas exchange in humans",
+          "Respiration",
+          "Excretion in humans",
+          "Coordination and response",
+          "Drugs",
+          "Reproduction",
+          "Inheritance",
+          "Variation and selection",
+          "Organisms and their environment",
+          "Biotechnology and genetic engineering",
+          "Human influences on ecosystems"
+        ]
+      },
+      "0455": {
+        "name": "Economics",
+        "major_areas": [
+          "The basic economic problem",
+          "The allocation of resources",
+          "Microeconomic decision makers",
+          "Government and the macroeconomy",
+          "Economic development",
+          "International trade and globalisation"
+        ]
+      },
+      "0500": {
+        "name": "English as a Second Language",
+        "major_areas": [
+          "Reading",
+          "Writing",
+          "Listening",
+          "Speaking"
+        ]
+      }
+    }
+  },
+  "rate_limiting": {
+    "requests_per_minute": 30,
+    "requests_per_hour": 1000,
+    "concurrent_requests": 3,
+    "backoff_strategy": "exponential",
+    "max_retries": 3
+  },
+  "content_processing": {
+    "text_cleaning": {
+      "remove_html_tags": true,
+      "normalize_whitespace": true,
+      "remove_special_chars": false,
+      "convert_to_lowercase": false
+    },
+    "content_splitting": {
+      "max_chunk_size": 4000,
+      "overlap_size": 200,
+      "split_on_sentences": true,
+      "preserve_paragraphs": true
+    },
+    "metadata_extraction": {
+      "extract_headings": true,
+      "extract_keywords": true,
+      "detect_language": true,
+      "estimate_reading_level": true
+    }
+  }
+}

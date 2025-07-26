@@ -1,0 +1,21 @@
+2025-07-18 19:35:30 - ollama_generation - INFO - Generating 15 quiz questions for topic: 01113818-425b-489f-849b-3a89f0a7ef81
+2025-07-18 19:35:37 - ollama_generation - INFO - Using Ollama host: http://localhost:11434
+2025-07-18 19:35:37 - ollama_generation - INFO - Generating 15 quiz questions for: Ohm's Law and its Limitations
+2025-07-18 19:45:09 - ollama_generation - ERROR - Failed to parse JSON: Expecting ',' delimiter: line 137 column 6 (char 6479)
+2025-07-18 19:45:09 - ollama_generation - ERROR - Invalid response format from Ollama
+2025-07-18 19:45:09 - ollama_generation - ERROR - Failed to generate questions
+2025-07-18 20:08:46 - ollama_generation - INFO - Generating 6 quiz questions for topic: 30424efd-b7df-49d0-85ba-0d94185cdabd
+2025-07-18 20:08:52 - ollama_generation - INFO - Using Ollama host: http://localhost:11434
+2025-07-18 20:08:52 - ollama_generation - INFO - Generating 6 quiz questions for: Cell Biology
+2025-07-18 20:08:52 - ollama_generation - INFO - Generating batch 1: 5 questions
+2025-07-18 20:16:04 - ollama_generation - INFO - Batch 1 completed: 5 questions generated
+2025-07-18 20:16:06 - ollama_generation - INFO - Generating batch 2: 1 questions
+2025-07-18 20:20:19 - ollama_generation - INFO - Batch 2 completed: 3 questions generated
+2025-07-18 20:20:19 - ollama_generation - INFO - Question 1: Valid (Quality: 0.90)
+2025-07-18 20:20:19 - ollama_generation - INFO - Question 2: Valid (Quality: 0.90)
+2025-07-18 20:20:19 - ollama_generation - INFO - Question 3: Valid (Quality: 1.00)
+2025-07-18 20:20:19 - ollama_generation - INFO - Question 4: Valid (Quality: 0.85)
+2025-07-18 20:20:19 - ollama_generation - INFO - Question 5: Valid (Quality: 0.90)
+2025-07-18 20:20:19 - ollama_generation - INFO - Question 6: Valid (Quality: 1.00)
+2025-07-18 20:20:19 - ollama_generation - INFO - Question 7: Valid (Quality: 0.90)
+2025-07-18 20:20:19 - ollama_generation - INFO - Question 8: Valid (Quality: 1.00)

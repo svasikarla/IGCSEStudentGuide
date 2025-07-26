@@ -1,28 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import LLMProviderSelector from './LLMProviderSelector';
+import QuestionCounter from './QuestionCounter';
+import QuickQuestionStats from './QuickQuestionStats';
 import { useQuizGeneration } from '../../hooks/useQuizGeneration';
 import { useSubjects } from '../../hooks/useSubjects';
 import { useTopics } from '../../hooks/useTopics';
+import { useChapters } from '../../hooks/useChapters';
+import { useRealtimeQuestionCounts } from '../../hooks/useQuestionStatistics';
 import { LLMProvider } from '../../services/llmAdapter';
 import { isChemistryContent } from '../../utils/chemistryValidator';
 import ChemistryValidationResults from '../validation/ChemistryValidationResults';
 import { useReview } from '../../contexts/ReviewContext';
 import { ContentType, ReviewState } from '../../types/reviewTypes';
+import { Chapter } from '../../types/chapter';
 
 interface QuizGeneratorFormProps {
   subjects: any[];
   topics: any[];
+  chapters?: Chapter[]; // Optional for backward compatibility
   onSubjectChange: (subjectId: string | null) => void;
 }
 
-const QuizGeneratorForm: React.FC<QuizGeneratorFormProps> = ({ 
-  subjects, 
-  topics, 
-  onSubjectChange 
+const QuizGeneratorForm: React.FC<QuizGeneratorFormProps> = ({
+  subjects,
+  topics,
+  chapters: passedChapters,
+  onSubjectChange
 }) => {
   const { subjects: allSubjects } = useSubjects();
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
   const [selectedTopic, setSelectedTopic] = useState<string>('');
+  const [selectedChapter, setSelectedChapter] = useState<string>('');
+  const [useChapterMode, setUseChapterMode] = useState<boolean>(false);
   const [questionCount, setQuestionCount] = useState<number>(5);
   const [difficultyLevel, setDifficultyLevel] = useState<string>('medium');
     const [llmProvider, setLlmProvider] = useState<LLMProvider>(LLMProvider.OPENAI);
@@ -32,8 +41,13 @@ const QuizGeneratorForm: React.FC<QuizGeneratorFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { topics: filteredTopics, loading: loadingTopics } = useTopics(selectedSubjectId);
+  const { chapters: hookChapters, loading: loadingChapters } = useChapters(selectedSubjectId);
+
+  // Use passed chapters if available, otherwise use hook chapters
+  const chapters = passedChapters || hookChapters;
   const { generateAndSaveQuiz, loading, error, validationResults } = useQuizGeneration();
   const { submitForReview, getContentReviewState } = useReview();
+  const { refreshStatistics } = useRealtimeQuestionCounts();
   const [reviewState, setReviewState] = useState<ReviewState | null>(null);
 
   // Check if the selected subject or topic is chemistry-related
@@ -68,34 +82,84 @@ const QuizGeneratorForm: React.FC<QuizGeneratorFormProps> = ({
   }, [generatedQuiz?.id, getContentReviewState]);
 
   const handleGenerate = async () => {
-    if (!selectedTopic || !selectedSubjectId) {
-      alert('Please select a subject and a topic first.');
-      return;
-    }
-
-    try {
-            const topic = filteredTopics.find(t => t.id === selectedTopic);
-      if (!topic || !topic.title) {
-        alert('Selected topic details could not be found.');
+    if (useChapterMode) {
+      // Chapter-based generation
+      if (!selectedChapter || !selectedSubjectId) {
+        alert('Please select a subject and a chapter first.');
         return;
       }
 
-      const newQuiz = await generateAndSaveQuiz(
-        selectedTopic, // topicId
-        topic.title,
-        topic.content || '',
-        questionCount,
-        difficultyLevel,
-        llmProvider,
-        selectedModel
-      );
+      try {
+        const chapter = chapters.find(c => c.id === selectedChapter);
+        if (!chapter) {
+          alert('Selected chapter details could not be found.');
+          return;
+        }
 
-      if (newQuiz) {
-        setGeneratedQuiz(newQuiz);
-        alert(`Successfully generated quiz with ${questionCount} questions for ${selectedTopic}`);
+        // Get all topics in the chapter
+        const chapterTopics = filteredTopics.filter(t => t.chapter_id === selectedChapter);
+        if (chapterTopics.length === 0) {
+          alert('No topics found in the selected chapter.');
+          return;
+        }
+
+        // For now, use the first topic as the primary topic and combine content from all topics
+        const primaryTopic = chapterTopics[0];
+        const combinedContent = chapterTopics
+          .map(t => `${t.title}: ${t.content || 'No content available'}`)
+          .join('\n\n');
+
+        const newQuiz = await generateAndSaveQuiz(
+          primaryTopic.id, // Use primary topic ID
+          `${chapter.title} - Chapter Quiz`,
+          combinedContent,
+          questionCount,
+          difficultyLevel,
+          llmProvider,
+          selectedModel
+        );
+
+        if (newQuiz) {
+          setGeneratedQuiz(newQuiz);
+          refreshStatistics();
+          alert(`Successfully generated chapter quiz with ${questionCount} questions for ${chapter.title}`);
+        }
+      } catch (err) {
+        console.error('Failed to generate chapter quiz:', err);
       }
-    } catch (err) {
-      console.error('Failed to generate quiz:', err);
+    } else {
+      // Topic-based generation (existing logic)
+      if (!selectedTopic || !selectedSubjectId) {
+        alert('Please select a subject and a topic first.');
+        return;
+      }
+
+      try {
+        const topic = filteredTopics.find(t => t.id === selectedTopic);
+        if (!topic || !topic.title) {
+          alert('Selected topic details could not be found.');
+          return;
+        }
+
+        const newQuiz = await generateAndSaveQuiz(
+          selectedTopic, // topicId
+          topic.title,
+          topic.content || '',
+          questionCount,
+          difficultyLevel,
+          llmProvider,
+          selectedModel
+        );
+
+        if (newQuiz) {
+          setGeneratedQuiz(newQuiz);
+          // Refresh question statistics after successful generation
+          refreshStatistics();
+          alert(`Successfully generated quiz with ${questionCount} questions for ${topic.title}`);
+        }
+      } catch (err) {
+        console.error('Failed to generate quiz:', err);
+      }
     }
   };
 
@@ -295,6 +359,126 @@ const QuizGeneratorForm: React.FC<QuizGeneratorFormProps> = ({
                 )}
               </div>
 
+              {/* Chapter-based Quiz Generation Toggle */}
+              {selectedSubjectId && chapters.length > 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="useChapterMode"
+                      checked={useChapterMode}
+                      onChange={(e) => {
+                        setUseChapterMode(e.target.checked);
+                        if (e.target.checked) {
+                          setSelectedTopic(''); // Clear topic selection when switching to chapter mode
+                        } else {
+                          setSelectedChapter(''); // Clear chapter selection when switching to topic mode
+                        }
+                      }}
+                      className="rounded border-neutral-300 text-primary-600 shadow-sm focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50"
+                      disabled={loading || isSubmitting}
+                    />
+                    <label htmlFor="useChapterMode" className="text-sm font-medium text-blue-900">
+                      Generate quiz from entire chapter
+                    </label>
+                  </div>
+                  <p className="mt-1 text-sm text-blue-700">
+                    Create a comprehensive quiz using questions from multiple topics within a chapter
+                  </p>
+                </div>
+              )}
+
+              {/* Chapter Selection */}
+              {useChapterMode && selectedSubjectId && chapters.length > 0 && (
+                <div>
+                  <label htmlFor="chapter" className="block text-sm font-medium text-neutral-700 mb-2">
+                    Chapter *
+                  </label>
+                  <div className="relative">
+                    <select
+                      id="chapter"
+                      value={selectedChapter}
+                      onChange={(e) => setSelectedChapter(e.target.value)}
+                      className="w-full px-4 py-3 border border-neutral-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 appearance-none bg-white"
+                      disabled={loading || isSubmitting}
+                    >
+                      <option value="">Select a chapter...</option>
+                      {chapters.map(chapter => (
+                        <option key={chapter.id} value={chapter.id}>
+                          {chapter.syllabus_code ? `${chapter.syllabus_code}. ` : ''}{chapter.title}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
+                      <svg className="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                  {selectedChapter && (
+                    <div className="mt-2 p-3 bg-neutral-50 border border-neutral-200 rounded-lg">
+                      {(() => {
+                        const chapter = chapters.find(c => c.id === selectedChapter);
+                        const chapterTopics = filteredTopics.filter(t => t.chapter_id === selectedChapter);
+                        return (
+                          <div>
+                            <p className="text-sm text-neutral-700">
+                              <span className="font-medium">Chapter:</span> {chapter?.title}
+                            </p>
+                            <p className="text-sm text-neutral-600 mt-1">
+                              <span className="font-medium">Topics included:</span> {chapterTopics.length} topics
+                            </p>
+                            {chapter?.description && (
+                              <p className="text-sm text-neutral-600 mt-1">{chapter.description}</p>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Question Counter for Selected Topic */}
+              {selectedTopic && !useChapterMode && (
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Current Question Count
+                  </label>
+                  <QuestionCounter
+                    topicId={selectedTopic}
+                    showRecommendations={true}
+                    showProgressBar={true}
+                    onGenerateMore={(recommendedCount) => {
+                      setQuestionCount(recommendedCount);
+                      // Optionally scroll to question count input
+                      const questionCountInput = document.getElementById('question-count');
+                      if (questionCountInput) {
+                        questionCountInput.focus();
+                      }
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Chapter Quiz Info */}
+              {useChapterMode && selectedChapter && (
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                  <div className="flex items-start space-x-3">
+                    <svg className="w-5 h-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <h4 className="text-sm font-medium text-green-900">Chapter Quiz Generation</h4>
+                      <p className="text-sm text-green-700 mt-1">
+                        This will create a comprehensive quiz drawing questions from all topics within the selected chapter.
+                        The quiz will test understanding across the entire chapter scope.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Quiz Configuration Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -352,9 +536,17 @@ const QuizGeneratorForm: React.FC<QuizGeneratorFormProps> = ({
                 <button
                   type="button"
                   onClick={handleGenerate}
-                  disabled={!selectedTopic || !selectedSubjectId || loading || isSubmitting}
+                  disabled={
+                    !selectedSubjectId ||
+                    (useChapterMode ? !selectedChapter : !selectedTopic) ||
+                    loading ||
+                    isSubmitting
+                  }
                   className={`flex-1 px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
-                    !selectedTopic || !selectedSubjectId || loading || isSubmitting
+                    !selectedSubjectId ||
+                    (useChapterMode ? !selectedChapter : !selectedTopic) ||
+                    loading ||
+                    isSubmitting
                       ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
                       : 'bg-primary-600 text-white hover:bg-primary-700 hover:shadow-medium shadow-soft'
                   }`}
@@ -413,6 +605,9 @@ const QuizGeneratorForm: React.FC<QuizGeneratorFormProps> = ({
 
         {/* Right Panel - Generated Content */}
         <div className="xl:col-span-7 space-y-6">
+          {/* Question Statistics Widget */}
+          <QuickQuestionStats />
+
           {/* Empty State */}
           {!loading && !generatedQuiz && !error && (
             <div className="bg-white rounded-2xl shadow-soft border border-neutral-200 p-12">
