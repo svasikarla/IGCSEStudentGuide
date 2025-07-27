@@ -35,6 +35,8 @@ export function useExamPapers() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+
+
   const generatePaper = useCallback(async (topicId: string, totalMarks: 20 | 50) => {
     if (!user) {
       setError('You must be logged in to generate a paper.');
@@ -45,6 +47,58 @@ export function useExamPapers() {
     setError(null);
 
     try {
+      // Debug logging
+      console.log('Generating exam paper with params:', {
+        user_id: user.id,
+        topic_id: topicId,
+        total_marks: totalMarks,
+        user_email: user.email,
+        user_id_type: typeof user.id,
+        topic_id_type: typeof topicId,
+        total_marks_type: typeof totalMarks
+      });
+
+      // Verify user session is still valid
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Session expired. Please log in again.');
+      }
+
+      // Verify user exists in auth.users table
+      const { data: authUser, error: authError } = await supabase.auth.getUser();
+      if (authError || !authUser.user) {
+        throw new Error('User authentication failed. Please log in again.');
+      }
+
+      // Verify topic exists and has questions
+      const { data: topicData, error: topicError } = await supabase
+        .from('topics')
+        .select(`
+          id,
+          title,
+          exam_questions!inner(count)
+        `)
+        .eq('id', topicId)
+        .eq('exam_questions.is_active', true)
+        .single();
+
+      if (topicError || !topicData) {
+        // Check if topic exists but has no questions
+        const { data: topicCheck } = await supabase
+          .from('topics')
+          .select('id, title')
+          .eq('id', topicId)
+          .single();
+
+        if (topicCheck) {
+          throw new Error(`No exam questions available for topic "${topicCheck.title}". Please select a different topic or generate questions for this topic first.`);
+        } else {
+          throw new Error(`Topic not found: ${topicId}`);
+        }
+      }
+
+      console.log('Topic verified:', topicData);
+
       const { data, error: rpcError } = await supabase.rpc('generate_exam_paper', {
         p_user_id: user.id,
         p_topic_id: topicId,
@@ -52,13 +106,38 @@ export function useExamPapers() {
       });
 
       if (rpcError) {
+        console.error('RPC Error details:', JSON.stringify(rpcError, null, 2));
+        console.error('RPC Error message:', rpcError.message);
+        console.error('RPC Error code:', rpcError.code);
+        console.error('RPC Error details:', rpcError.details);
         throw rpcError;
       }
 
+      console.log('Successfully generated exam paper:', data);
       return data; // This will be the new exam paper's ID
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred.';
+      let errorMessage = 'An unexpected error occurred.';
+
+      // Handle specific Supabase errors
+      if ((err as any)?.message) {
+        errorMessage = (err as any).message;
+
+        // Make error messages more user-friendly
+        if (errorMessage.includes('No active questions found for topic_id')) {
+          errorMessage = 'No exam questions are available for the selected topic. Please choose a different topic or generate questions for this topic first.';
+        }
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+
       console.error('Error generating exam paper:', errorMessage);
+      console.error('Full error object:', JSON.stringify(err, null, 2));
+      console.error('Error properties:', {
+        message: (err as any)?.message,
+        code: (err as any)?.code,
+        details: (err as any)?.details,
+        hint: (err as any)?.hint
+      });
       setError(errorMessage);
       return null;
     } finally {
@@ -267,5 +346,49 @@ export function useExamPapers() {
     }
   }, [user]);
 
-  return { generatePaper, getPaperDetails, getPaperHistory, uploadAnswerSheet, loading, error };
+  // Get topics with question counts for better UX
+  const getTopicsWithQuestionCounts = useCallback(async (subjectId?: string) => {
+    try {
+      let query = supabase
+        .from('topics')
+        .select(`
+          id,
+          title,
+          subject_id,
+          subjects(name),
+          exam_questions!left(count)
+        `)
+        .eq('exam_questions.is_active', true);
+
+      if (subjectId) {
+        query = query.eq('subject_id', subjectId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      // Transform the data to include question counts
+      const topicsWithCounts = data?.map(topic => ({
+        ...topic,
+        question_count: topic.exam_questions?.length || 0,
+        has_questions: (topic.exam_questions?.length || 0) > 0
+      })) || [];
+
+      return topicsWithCounts;
+    } catch (err) {
+      console.error('Error fetching topics with question counts:', err);
+      return [];
+    }
+  }, []);
+
+  return {
+    generatePaper,
+    getPaperDetails,
+    getPaperHistory,
+    uploadAnswerSheet,
+    getTopicsWithQuestionCounts,
+    loading,
+    error
+  };
 }

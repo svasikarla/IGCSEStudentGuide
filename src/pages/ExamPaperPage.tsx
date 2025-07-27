@@ -16,18 +16,26 @@ const ExamPaperPage: React.FC = () => {
   const [paperHistory, setPaperHistory] = useState<PaperHistoryItem[]>([]);
   const [uploadingPaperId, setUploadingPaperId] = useState<string | null>(null);
   const [viewingEvaluationId, setViewingEvaluationId] = useState<string | null>(null);
+  const [topicsWithQuestions, setTopicsWithQuestions] = useState<any[]>([]);
 
   const { subjects, loading: subjectsLoading } = useSubjects();
   const { chapters, loading: chaptersLoading } = useChapters(selectedSubjectId);
   const { topics, loading: topicsLoading } = useTopics(selectedSubjectId);
-  const { generatePaper, getPaperDetails, getPaperHistory, loading: paperLoading, error: paperError } = useExamPapers();
+  const { generatePaper, getPaperDetails, getPaperHistory, getTopicsWithQuestionCounts, loading: paperLoading, error: paperError } = useExamPapers();
 
   // Reset chapter and topic when subject changes
   useEffect(() => {
     setSelectedChapterId(null);
     setSelectedTopicId(null);
     setUseChapterMode(false);
-  }, [selectedSubjectId]);
+
+    // Fetch topics with question counts for the selected subject
+    if (selectedSubjectId) {
+      getTopicsWithQuestionCounts(selectedSubjectId).then(setTopicsWithQuestions);
+    } else {
+      setTopicsWithQuestions([]);
+    }
+  }, [selectedSubjectId, getTopicsWithQuestionCounts]);
 
   // Reset topic when chapter changes
   useEffect(() => {
@@ -251,10 +259,22 @@ const ExamPaperPage: React.FC = () => {
                 className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
               >
                 <option value="">{topicsLoading ? 'Loading...' : 'Select a topic'}</option>
-                {topics.map(topic => (
-                  <option key={topic.id} value={topic.id}>{topic.title}</option>
+                {topicsWithQuestions.map(topic => (
+                  <option
+                    key={topic.id}
+                    value={topic.id}
+                    disabled={!topic.has_questions}
+                    style={{ color: topic.has_questions ? 'inherit' : '#999' }}
+                  >
+                    {topic.title} {topic.has_questions ? `(${topic.question_count} questions)` : '(No questions available)'}
+                  </option>
                 ))}
               </select>
+              {topicsWithQuestions.length > 0 && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Topics with question counts are shown. Only topics with available questions can be selected.
+                </p>
+              )}
             </div>
           )}
 
@@ -272,10 +292,17 @@ const ExamPaperPage: React.FC = () => {
                 className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
               >
                 <option value="">All topics in chapter</option>
-                {topics
+                {topicsWithQuestions
                   .filter(topic => topic.chapter_id === selectedChapterId)
                   .map(topic => (
-                    <option key={topic.id} value={topic.id}>{topic.title}</option>
+                    <option
+                      key={topic.id}
+                      value={topic.id}
+                      disabled={!topic.has_questions}
+                      style={{ color: topic.has_questions ? 'inherit' : '#999' }}
+                    >
+                      {topic.title} {topic.has_questions ? `(${topic.question_count} questions)` : '(No questions available)'}
+                    </option>
                   ))}
               </select>
               <p className="mt-1 text-xs text-gray-500">
