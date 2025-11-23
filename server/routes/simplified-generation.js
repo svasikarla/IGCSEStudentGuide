@@ -9,6 +9,10 @@ const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('../middleware/auth');
 const { requireAdmin } = require('../middleware/admin');
+const {
+  validateSimplifiedGeneration,
+  limitRequestSize
+} = require('../middleware/validation');
 // Note: OpenAI service implementation is missing - will be handled in service selection
 // const { OpenAIService } = require('../services/openaiService'); // TODO: Implement this service
 const GeminiService = require('../services/geminiService');
@@ -129,8 +133,9 @@ function getLLMService(costTier = 'minimal') {
  * Generate quiz questions directly without web scraping
  * POST /api/simplified-generation/quiz
  * PROTECTED: Requires authentication and admin role
+ * Validates: subject, topicTitle (required), questionCount, difficultyLevel, grade, costTier
  */
-router.post('/quiz', verifyToken, requireAdmin, async (req, res) => {
+router.post('/quiz', limitRequestSize(500), verifyToken, requireAdmin, validateSimplifiedGeneration, async (req, res) => {
   try {
     const {
       subject,
@@ -285,8 +290,9 @@ Return JSON format:
  * Generate exam paper directly
  * POST /api/simplified-generation/exam
  * PROTECTED: Requires authentication and admin role
+ * Validates: subject, topicTitle (required), questionCount, difficultyLevel, grade, costTier
  */
-router.post('/exam', verifyToken, requireAdmin, async (req, res) => {
+router.post('/exam', limitRequestSize(500), verifyToken, requireAdmin, validateSimplifiedGeneration, async (req, res) => {
   try {
     const {
       subject,
@@ -442,8 +448,9 @@ Return JSON format:
  * Generate flashcards directly
  * POST /api/simplified-generation/flashcards
  * PROTECTED: Requires authentication and admin role
+ * Validates: subject, topicTitle (required), cardCount, difficultyLevel, grade, costTier
  */
-router.post('/flashcards', verifyToken, requireAdmin, async (req, res) => {
+router.post('/flashcards', limitRequestSize(500), verifyToken, requireAdmin, validateSimplifiedGeneration, async (req, res) => {
   try {
     const {
       subject,

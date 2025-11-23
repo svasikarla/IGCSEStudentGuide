@@ -6,6 +6,11 @@ const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('../middleware/auth');
 const { requireAdmin } = require('../middleware/admin');
+const {
+  validateLLMGeneration,
+  validateCurriculumGeneration,
+  limitRequestSize
+} = require('../middleware/validation');
 const OpenAI = require('openai');
 const GeminiService = require('../services/geminiService');
 const HuggingFaceService = require('../services/huggingFaceService');
@@ -195,8 +200,9 @@ IMPORTANT: You must respond with a valid, parseable JSON object only.
 /**
  * Generate text content using LLM
  * POST /api/llm/generate
+ * Validates: prompt (required), provider, model, temperature, max_tokens
  */
-router.post('/generate', async (req, res) => {
+router.post('/generate', limitRequestSize(500), validateLLMGeneration, async (req, res) => {
   try {
     const {
       prompt,
@@ -205,10 +211,6 @@ router.post('/generate', async (req, res) => {
       max_tokens = 1000,
       provider = 'openai'
     } = req.body;
-
-    if (!prompt) {
-      return res.status(400).json({ error: 'Prompt is required' });
-    }
 
     const llmService = getLLMService(provider);
     const generatedText = await llmService.generateText(prompt, {
@@ -227,8 +229,9 @@ router.post('/generate', async (req, res) => {
 /**
  * Generate JSON content using LLM
  * POST /api/llm/generate-json
+ * Validates: prompt (required), provider, model, temperature, max_tokens
  */
-router.post('/generate-json', async (req, res) => {
+router.post('/generate-json', limitRequestSize(500), validateLLMGeneration, async (req, res) => {
   try {
     const {
       prompt,
@@ -237,10 +240,6 @@ router.post('/generate-json', async (req, res) => {
       max_tokens = 1000,
       provider = 'openai'
     } = req.body;
-    
-    if (!prompt) {
-      return res.status(400).json({ error: 'Prompt is required' });
-    }
 
     try {
       const llmService = getLLMService(provider);
@@ -274,8 +273,9 @@ router.post('/generate-json', async (req, res) => {
  *
  * Provides 50-100+ topics with complete IGCSE syllabus coverage
  * POST /api/llm/generate-curriculum
+ * Validates: subjectName, gradeLevel (required), curriculumBoard, tier, provider
  */
-router.post('/generate-curriculum', async (req, res) => {
+router.post('/generate-curriculum', limitRequestSize(500), validateCurriculumGeneration, async (req, res) => {
   try {
     const {
       subjectName,
@@ -286,12 +286,6 @@ router.post('/generate-curriculum', async (req, res) => {
       temperature = 0.3,
       provider = 'openai'
     } = req.body;
-
-    if (!subjectName || !gradeLevel) {
-      return res.status(400).json({
-        error: 'Subject name and grade level are required'
-      });
-    }
 
     const llmService = getLLMService(provider);
 

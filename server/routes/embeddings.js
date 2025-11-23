@@ -8,6 +8,11 @@
 const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('../middleware/auth');
+const {
+  validateEmbeddingsGeneration,
+  validateBatchEmbeddings,
+  limitRequestSize
+} = require('../middleware/validation');
 
 // Import embedding providers
 let openaiClient = null;
@@ -95,22 +100,11 @@ async function generateCohereEmbedding(text) {
  * POST /api/embeddings/generate
  * Generate embedding for a text input
  * PROTECTED: Requires authentication (for students & admins)
+ * Validates: text (required, max 8000 chars), provider
  */
-router.post('/generate', verifyToken, async (req, res) => {
+router.post('/generate', limitRequestSize(100), verifyToken, validateEmbeddingsGeneration, async (req, res) => {
   try {
     const { text, provider = 'openai' } = req.body;
-
-    if (!text || typeof text !== 'string') {
-      return res.status(400).json({
-        error: 'Text input is required and must be a string'
-      });
-    }
-
-    if (text.length > 8000) {
-      return res.status(400).json({
-        error: 'Text input too long (max 8000 characters)'
-      });
-    }
 
     let embedding;
 
@@ -159,36 +153,12 @@ router.post('/generate', verifyToken, async (req, res) => {
  * POST /api/embeddings/batch
  * Generate embeddings for multiple texts
  * PROTECTED: Requires authentication (for students & admins)
+ * Validates: texts (required array, max 100 items, max 8000 chars each), provider
  */
-router.post('/batch', verifyToken, async (req, res) => {
+router.post('/batch', limitRequestSize(200), verifyToken, validateBatchEmbeddings, async (req, res) => {
   try {
     const { texts, provider = 'openai' } = req.body;
-
-    if (!Array.isArray(texts) || texts.length === 0) {
-      return res.status(400).json({
-        error: 'Texts must be a non-empty array'
-      });
-    }
-
-    if (texts.length > 100) {
-      return res.status(400).json({
-        error: 'Too many texts (max 100 per batch)'
-      });
-    }
-
-    // Validate all texts
-    for (const text of texts) {
-      if (!text || typeof text !== 'string') {
-        return res.status(400).json({
-          error: 'All texts must be non-empty strings'
-        });
-      }
-      if (text.length > 8000) {
-        return res.status(400).json({
-          error: 'Text too long (max 8000 characters per text)'
-        });
-      }
-    }
+    // Validation handled by validateBatchEmbeddings middleware
 
     const embeddings = [];
     const errors = [];
