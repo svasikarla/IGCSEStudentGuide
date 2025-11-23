@@ -13,6 +13,10 @@ const {
   validateBatchEmbeddings,
   limitRequestSize
 } = require('../middleware/validation');
+const {
+  embeddingsLimiter,
+  batchEmbeddingsLimiter
+} = require('../middleware/rateLimiting');
 
 // Import embedding providers
 let openaiClient = null;
@@ -100,9 +104,10 @@ async function generateCohereEmbedding(text) {
  * POST /api/embeddings/generate
  * Generate embedding for a text input
  * PROTECTED: Requires authentication (for students & admins)
+ * Rate Limit: 50 requests per 15 minutes
  * Validates: text (required, max 8000 chars), provider
  */
-router.post('/generate', limitRequestSize(100), verifyToken, validateEmbeddingsGeneration, async (req, res) => {
+router.post('/generate', embeddingsLimiter, limitRequestSize(100), verifyToken, validateEmbeddingsGeneration, async (req, res) => {
   try {
     const { text, provider = 'openai' } = req.body;
 
@@ -153,9 +158,10 @@ router.post('/generate', limitRequestSize(100), verifyToken, validateEmbeddingsG
  * POST /api/embeddings/batch
  * Generate embeddings for multiple texts
  * PROTECTED: Requires authentication (for students & admins)
+ * Rate Limit: 10 requests per 15 minutes
  * Validates: texts (required array, max 100 items, max 8000 chars each), provider
  */
-router.post('/batch', limitRequestSize(200), verifyToken, validateBatchEmbeddings, async (req, res) => {
+router.post('/batch', batchEmbeddingsLimiter, limitRequestSize(200), verifyToken, validateBatchEmbeddings, async (req, res) => {
   try {
     const { texts, provider = 'openai' } = req.body;
     // Validation handled by validateBatchEmbeddings middleware

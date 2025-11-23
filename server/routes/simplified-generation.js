@@ -13,6 +13,7 @@ const {
   validateSimplifiedGeneration,
   limitRequestSize
 } = require('../middleware/validation');
+const { contentGenerationLimiter } = require('../middleware/rateLimiting');
 const { logError } = require('../utils/errorHandler');
 // Note: OpenAI service implementation is missing - will be handled in service selection
 // const { OpenAIService } = require('../services/openaiService'); // TODO: Implement this service
@@ -134,9 +135,10 @@ function getLLMService(costTier = 'minimal') {
  * Generate quiz questions directly without web scraping
  * POST /api/simplified-generation/quiz
  * PROTECTED: Requires authentication and admin role
+ * Rate Limit: 20 requests per 15 minutes
  * Validates: subject, topicTitle (required), questionCount, difficultyLevel, grade, costTier
  */
-router.post('/quiz', limitRequestSize(500), verifyToken, requireAdmin, validateSimplifiedGeneration, async (req, res) => {
+router.post('/quiz', contentGenerationLimiter, limitRequestSize(500), verifyToken, requireAdmin, validateSimplifiedGeneration, async (req, res) => {
   try {
     const {
       subject,
@@ -287,9 +289,10 @@ Return JSON format:
  * Generate exam paper directly
  * POST /api/simplified-generation/exam
  * PROTECTED: Requires authentication and admin role
+ * Rate Limit: 20 requests per 15 minutes
  * Validates: subject, topicTitle (required), questionCount, difficultyLevel, grade, costTier
  */
-router.post('/exam', limitRequestSize(500), verifyToken, requireAdmin, validateSimplifiedGeneration, async (req, res) => {
+router.post('/exam', contentGenerationLimiter, limitRequestSize(500), verifyToken, requireAdmin, validateSimplifiedGeneration, async (req, res) => {
   try {
     const {
       subject,
@@ -441,9 +444,10 @@ Return JSON format:
  * Generate flashcards directly
  * POST /api/simplified-generation/flashcards
  * PROTECTED: Requires authentication and admin role
+ * Rate Limit: 20 requests per 15 minutes
  * Validates: subject, topicTitle (required), cardCount, difficultyLevel, grade, costTier
  */
-router.post('/flashcards', limitRequestSize(500), verifyToken, requireAdmin, validateSimplifiedGeneration, async (req, res) => {
+router.post('/flashcards', contentGenerationLimiter, limitRequestSize(500), verifyToken, requireAdmin, validateSimplifiedGeneration, async (req, res) => {
   try {
     const {
       subject,

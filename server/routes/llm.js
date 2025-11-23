@@ -11,6 +11,10 @@ const {
   validateCurriculumGeneration,
   limitRequestSize
 } = require('../middleware/validation');
+const {
+  llmGenerationLimiter,
+  curriculumGenerationLimiter
+} = require('../middleware/rateLimiting');
 const OpenAI = require('openai');
 const GeminiService = require('../services/geminiService');
 const HuggingFaceService = require('../services/huggingFaceService');
@@ -200,9 +204,10 @@ IMPORTANT: You must respond with a valid, parseable JSON object only.
 /**
  * Generate text content using LLM
  * POST /api/llm/generate
+ * Rate Limit: 10 requests per 15 minutes
  * Validates: prompt (required), provider, model, temperature, max_tokens
  */
-router.post('/generate', limitRequestSize(500), validateLLMGeneration, async (req, res) => {
+router.post('/generate', llmGenerationLimiter, limitRequestSize(500), validateLLMGeneration, async (req, res) => {
   try {
     const {
       prompt,
@@ -229,9 +234,10 @@ router.post('/generate', limitRequestSize(500), validateLLMGeneration, async (re
 /**
  * Generate JSON content using LLM
  * POST /api/llm/generate-json
+ * Rate Limit: 10 requests per 15 minutes
  * Validates: prompt (required), provider, model, temperature, max_tokens
  */
-router.post('/generate-json', limitRequestSize(500), validateLLMGeneration, async (req, res) => {
+router.post('/generate-json', llmGenerationLimiter, limitRequestSize(500), validateLLMGeneration, async (req, res) => {
   try {
     const {
       prompt,
@@ -273,9 +279,10 @@ router.post('/generate-json', limitRequestSize(500), validateLLMGeneration, asyn
  *
  * Provides 50-100+ topics with complete IGCSE syllabus coverage
  * POST /api/llm/generate-curriculum
+ * Rate Limit: 3 requests per hour (expensive operation)
  * Validates: subjectName, gradeLevel (required), curriculumBoard, tier, provider
  */
-router.post('/generate-curriculum', limitRequestSize(500), validateCurriculumGeneration, async (req, res) => {
+router.post('/generate-curriculum', curriculumGenerationLimiter, limitRequestSize(500), validateCurriculumGeneration, async (req, res) => {
   try {
     const {
       subjectName,
