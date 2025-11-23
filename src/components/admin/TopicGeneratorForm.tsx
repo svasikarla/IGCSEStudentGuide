@@ -215,8 +215,6 @@ const TopicGeneratorForm: React.FC<TopicGeneratorFormProps> = ({ subjects, onSub
       syllabus_code: topic.syllabus_code || null,
       curriculum_board: topic.curriculum_board || curriculumBoard,
       tier: topic.tier || tier || null,
-      major_area: topic.major_area || (selectedChapter ? selectedChapter.title : null), // Use chapter title as major_area for backward compatibility
-      topic_level: topic.topic_level || 1,
       official_syllabus_ref: topic.official_syllabus_ref || null,
     }));
 
@@ -737,12 +735,7 @@ const TopicGeneratorForm: React.FC<TopicGeneratorFormProps> = ({ subjects, onSub
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                         </svg>
                         <span>
-                          {(() => {
-                            const majorAreas = new Set(generatedTopics.filter(t => t.topic_level === 1).map(t => t.major_area)).size;
-                            const topics = generatedTopics.filter(t => t.topic_level === 2).length;
-                            const subtopics = generatedTopics.filter(t => t.topic_level === 3).length;
-                            return `${majorAreas} areas, ${topics} topics, ${subtopics} subtopics`;
-                          })()}
+                          {generatedTopics.length} topics generated
                         </span>
                       </div>
                       <div className="flex items-center gap-1">
@@ -791,30 +784,24 @@ const TopicGeneratorForm: React.FC<TopicGeneratorFormProps> = ({ subjects, onSub
               </div>
 
               {/* Curriculum Statistics */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 p-4 bg-neutral-50 rounded-xl">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 p-4 bg-neutral-50 rounded-xl">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-primary-600">
-                    {generatedTopics.filter(t => t.topic_level === 1).length}
+                    {generatedTopics.length}
                   </div>
-                  <div className="text-sm text-neutral-600">Major Areas</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary-600">
-                    {generatedTopics.filter(t => t.topic_level === 2).length}
-                  </div>
-                  <div className="text-sm text-neutral-600">Topics</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary-600">
-                    {generatedTopics.filter(t => t.topic_level === 3).length}
-                  </div>
-                  <div className="text-sm text-neutral-600">Subtopics</div>
+                  <div className="text-sm text-neutral-600">Total Topics</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-success-600">
-                    {generatedTopics.length}
+                    {generateForChapter && selectedChapter ? selectedChapter.title : 'All Subjects'}
                   </div>
-                  <div className="text-sm text-neutral-600">Total Items</div>
+                  <div className="text-sm text-neutral-600">{generateForChapter ? 'Target Chapter' : 'Organization'}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-neutral-600">
+                    {generatedTopics.reduce((sum, t) => sum + (t.estimated_study_time_minutes || 0), 0)}min
+                  </div>
+                  <div className="text-sm text-neutral-600">Total Study Time</div>
                 </div>
               </div>
 
