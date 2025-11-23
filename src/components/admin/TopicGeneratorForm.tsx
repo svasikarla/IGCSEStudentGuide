@@ -805,121 +805,53 @@ const TopicGeneratorForm: React.FC<TopicGeneratorFormProps> = ({ subjects, onSub
                 </div>
               </div>
 
-              {/* Hierarchical Topic Display */}
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                {generatedTopics
-                  .filter(topic => topic.topic_level === 1)
-                  .map((majorArea, majorIndex) => {
-                    const relatedTopics = generatedTopics.filter(
-                      topic => topic.major_area === majorArea.title && topic.topic_level === 2
-                    );
+              {/* Topic List Display */}
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {generatedTopics.map((topic, index) => {
+                  const isSaved = existingTopicTitles.has(topic.title || '');
 
-                    return (
-                      <div key={majorIndex} className="border border-neutral-200 rounded-xl overflow-hidden">
-                        {/* Major Area Header */}
-                        <div className="bg-primary-50 border-b border-primary-100 p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-primary-600 text-white rounded-lg flex items-center justify-center text-sm font-bold">
-                                {majorArea.syllabus_code || majorIndex + 1}
-                              </div>
-                              <div>
-                                <h4 className="font-semibold text-primary-900">{majorArea.title}</h4>
-                                <p className="text-sm text-primary-700">{majorArea.description}</p>
-                              </div>
-                            </div>
-                            <div className="text-sm text-primary-600 font-medium">
-                              {relatedTopics.length} topics
-                            </div>
+                  return (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => handleTopicSelect(topic.title || '')}
+                      className={`w-full text-left p-4 rounded-lg border transition-all duration-200 hover:shadow-md ${
+                        isSaved
+                          ? 'bg-success-50 border-success-200 hover:bg-success-100'
+                          : 'bg-white border-neutral-200 hover:bg-neutral-50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="w-8 h-8 bg-primary-100 text-primary-700 rounded-lg flex items-center justify-center text-sm font-medium flex-shrink-0">
+                            {topic.syllabus_code || (index + 1)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-neutral-900 truncate">{topic.title}</div>
+                            <div className="text-sm text-neutral-600 line-clamp-2">{topic.description}</div>
                           </div>
                         </div>
-
-                        {/* Topics within Major Area */}
-                        <div className="p-4 space-y-3">
-                          {relatedTopics.map((topic, topicIndex) => {
-                            const subtopics = generatedTopics.filter(
-                              subtopic => subtopic.major_area === majorArea.title &&
-                                         subtopic.topic_level === 3 &&
-                                         subtopic.syllabus_code?.startsWith(topic.syllabus_code || '')
-                            );
-                            const isSaved = existingTopicTitles.has(topic.title || '');
-
-                            return (
-                              <div key={topicIndex} className="border border-neutral-100 rounded-lg overflow-hidden">
-                                {/* Topic */}
-                                <button
-                                  type="button"
-                                  onClick={() => handleTopicSelect(topic.title || '')}
-                                  className={`w-full text-left p-3 transition-all duration-200 hover:bg-neutral-50 ${
-                                    isSaved ? 'bg-success-50' : 'bg-white'
-                                  }`}
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                      <div className="w-6 h-6 bg-neutral-200 text-neutral-700 rounded text-xs font-medium flex items-center justify-center">
-                                        {topic.syllabus_code?.split('.')[1] || topicIndex + 1}
-                                      </div>
-                                      <div>
-                                        <div className="font-medium text-neutral-900">{topic.title}</div>
-                                        <div className="text-sm text-neutral-600">{topic.description}</div>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      {topic.estimated_study_time_minutes && (
-                                        <span className="text-xs bg-neutral-100 text-neutral-600 px-2 py-1 rounded">
-                                          {topic.estimated_study_time_minutes}min
-                                        </span>
-                                      )}
-                                      {isSaved && (
-                                        <svg className="w-4 h-4 text-success-600" fill="currentColor" viewBox="0 0 20 20">
-                                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                        </svg>
-                                      )}
-                                    </div>
-                                  </div>
-                                </button>
-
-                                {/* Subtopics */}
-                                {subtopics.length > 0 && (
-                                  <div className="bg-neutral-25 border-t border-neutral-100 p-3">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                      {subtopics.map((subtopic, subtopicIndex) => {
-                                        const isSubtopicSaved = existingTopicTitles.has(subtopic.title || '');
-                                        return (
-                                          <button
-                                            key={subtopicIndex}
-                                            type="button"
-                                            onClick={() => handleTopicSelect(subtopic.title || '')}
-                                            className={`text-left p-2 rounded-lg text-sm transition-all duration-200 hover:bg-white ${
-                                              isSubtopicSaved ? 'bg-success-50 text-success-800' : 'bg-neutral-50 hover:bg-white'
-                                            }`}
-                                          >
-                                            <div className="flex items-center justify-between">
-                                              <div className="flex items-center gap-2">
-                                                <div className="w-4 h-4 bg-neutral-300 text-neutral-600 rounded text-xs font-medium flex items-center justify-center">
-                                                  {subtopic.syllabus_code?.split('.')[2] || subtopicIndex + 1}
-                                                </div>
-                                                <span className="font-medium">{subtopic.title}</span>
-                                              </div>
-                                              {isSubtopicSaved && (
-                                                <svg className="w-3 h-3 text-success-600" fill="currentColor" viewBox="0 0 20 20">
-                                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                                </svg>
-                                              )}
-                                            </div>
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
+                        <div className="flex items-center gap-3 ml-4 flex-shrink-0">
+                          {topic.estimated_study_time_minutes && (
+                            <span className="text-xs bg-neutral-100 text-neutral-600 px-2 py-1 rounded font-medium">
+                              {topic.estimated_study_time_minutes}min
+                            </span>
+                          )}
+                          {topic.difficulty_level && (
+                            <span className="text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded font-medium">
+                              Level {topic.difficulty_level}
+                            </span>
+                          )}
+                          {isSaved && (
+                            <svg className="w-5 h-5 text-success-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          )}
                         </div>
                       </div>
-                    );
-                  })}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}

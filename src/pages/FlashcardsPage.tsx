@@ -125,20 +125,21 @@ const FlashcardsPage: React.FC = () => {
             >
               <option value="">-- Select a Topic --</option>
               {topics
-                .sort((a, b) => (a.major_area || '').localeCompare(b.major_area || '') || a.title.localeCompare(b.title))
+                .sort((a, b) => a.title.localeCompare(b.title))
                 .map((topic) => {
                   const hasContent = topic.content && topic.content.trim().length > 0;
                   const difficultyLabel = ['', 'Beginner', 'Elementary', 'Intermediate', 'Advanced', 'Expert'][topic.difficulty_level] || 'Unknown';
+                  const syllabusCode = topic.syllabus_code ? `[${topic.syllabus_code}] ` : '';
                   return (
                     <option key={topic.id} value={topic.id}>
-                      {topic.major_area} → {topic.title} ({difficultyLabel}) {!hasContent ? '⚠️ No Content' : ''}
+                      {syllabusCode}{topic.title} ({difficultyLabel}) {!hasContent ? '⚠️ No Content' : ''}
                     </option>
                   );
                 })}
             </select>
             {topics.length > 0 && (
               <p className="text-xs text-neutral-500 mt-1">
-                Topics are grouped by major area and sorted alphabetically
+                Topics are sorted alphabetically by title
               </p>
             )}
           </div>

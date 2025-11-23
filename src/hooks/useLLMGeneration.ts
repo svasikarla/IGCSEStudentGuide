@@ -308,24 +308,24 @@ export function useTopicListGeneration() {
         throw new Error('Authentication required.');
       }
 
-      // Step 1: Generate major areas first
-      const majorAreasPrompt = `
+      // Step 1: Generate chapters first
+      const chaptersPrompt = `
         You are an expert ${curriculumBoard} curriculum designer.
 
-        Generate the major curriculum areas for "${subjectName}" at grade level(s) "${gradeLevel}"${tier ? ` (${tier} tier)` : ''}.
+        Generate the main chapters for "${subjectName}" at grade level(s) "${gradeLevel}"${tier ? ` (${tier} tier)` : ''}.
 
-        Return 5-8 major areas that comprehensively cover the entire syllabus.
+        Return 5-8 chapters that comprehensively cover the entire syllabus.
 
         Return a JSON array of objects with:
         {
-          "title": "Major area title",
-          "description": "Brief description of this curriculum area",
+          "title": "Chapter title",
+          "description": "Brief description of this chapter",
           "syllabus_code": "Sequential code (1, 2, 3, etc.)",
           "official_syllabus_ref": "Official reference if known"
         }
       `;
 
-      const majorAreasResponse = await llmService.generateContent(majorAreasPrompt, {
+      const chaptersResponse = await llmService.generateContent(chaptersPrompt, {
         authToken: session.access_token,
         provider,
         model,
@@ -333,41 +333,38 @@ export function useTopicListGeneration() {
         maxTokens: 2000,
       });
 
-      if (!majorAreasResponse) {
-        throw new Error('Failed to generate major areas.');
+      if (!chaptersResponse) {
+        throw new Error('Failed to generate chapters.');
       }
 
-      const majorAreasJson = majorAreasResponse.substring(
-        majorAreasResponse.indexOf('['),
-        majorAreasResponse.lastIndexOf(']') + 1
+      const chaptersJson = chaptersResponse.substring(
+        chaptersResponse.indexOf('['),
+        chaptersResponse.lastIndexOf(']') + 1
       );
-      const majorAreas = JSON.parse(majorAreasJson);
+      const chapters = JSON.parse(chaptersJson);
 
-      // Step 2: Generate detailed topics for each major area
+      // Step 2: Generate detailed topics for each chapter
       const allTopics: Partial<Topic>[] = [];
 
-      for (const [index, area] of majorAreas.entries()) {
+      for (const [index, chapter] of chapters.entries()) {
         const detailedPrompt = `
           You are an expert ${curriculumBoard} curriculum designer.
 
-          For the major area "${area.title}" in "${subjectName}" (${gradeLevel}${tier ? `, ${tier} tier` : ''}), generate a comprehensive breakdown of ALL topics and subtopics.
+          For the chapter "${chapter.title}" in "${subjectName}" (${gradeLevel}${tier ? `, ${tier} tier` : ''}), generate a comprehensive list of ALL topics.
 
-          Generate 8-15 topics with 2-4 subtopics each to ensure complete coverage of this curriculum area.
+          Generate 10-20 specific topics to ensure complete coverage of this chapter.
 
           IMPORTANT TITLE REQUIREMENTS:
           - Create SPECIFIC, DESCRIPTIVE titles that avoid generic terms
           - DO NOT use generic titles like "Introduction", "Overview", "Fundamentals", "Basics", "Principles"
           - Instead use specific titles like "Cell Structure Components", "DNA Replication Process", "Photosynthesis Mechanisms"
           - Each title must be unique and descriptive of the specific content
-          - Include the major area context in titles when helpful for clarity
 
           Return a JSON array where each object has:
           {
-            "title": "Specific, descriptive topic/subtopic title (avoid generic terms)",
+            "title": "Specific, descriptive topic title (avoid generic terms)",
             "description": "Brief description (1 sentence)",
-            "major_area": "${area.title}",
-            "topic_level": 2|3 (2=Topic, 3=Subtopic),
-            "syllabus_code": "${area.syllabus_code}.X" or "${area.syllabus_code}.X.Y",
+            "syllabus_code": "${chapter.syllabus_code}.X",
             "official_syllabus_ref": "Official reference if applicable",
             "difficulty_level": 1-5,
             "estimated_study_time_minutes": 30-90
@@ -403,26 +400,13 @@ export function useTopicListGeneration() {
             } catch (finalError) {
               console.error('Detailed topic generation JSON fix failed:', finalError);
               const errorMessage = finalError instanceof Error ? finalError.message : 'Unknown parsing error';
-              console.log(`Skipping this major area due to JSON parsing error: ${errorMessage}`);
-              continue; // Skip this major area and continue with the next one
+              console.log(`Skipping this chapter due to JSON parsing error: ${errorMessage}`);
+              continue; // Skip this chapter and continue with the next one
             }
           }
 
-          // Add the major area as level 1
-          allTopics.push({
-            title: area.title,
-            description: area.description,
-            major_area: area.title,
-            topic_level: 1,
-            syllabus_code: area.syllabus_code,
-            official_syllabus_ref: area.official_syllabus_ref,
-            difficulty_level: 2,
-            estimated_study_time_minutes: 60,
-            curriculum_board: curriculumBoard,
-            tier: tier || null,
-          });
-
-          // Add all detailed topics
+          // Add all topics for this chapter (no longer adding chapter as a separate topic)
+          // Note: Chapters should be created separately, topics reference them via chapter_id
           allTopics.push(...detailedTopics.map((topic: any) => ({
             ...topic,
             curriculum_board: curriculumBoard,
