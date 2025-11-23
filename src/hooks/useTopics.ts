@@ -20,8 +20,6 @@ export interface Topic {
   syllabus_code?: string | null;
   curriculum_board?: string | null;
   tier?: string | null;
-  major_area?: string | null; // Maintained for backward compatibility
-  topic_level?: number | null;
   official_syllabus_ref?: string | null;
   created_at?: string;
   updated_at?: string;
@@ -128,21 +126,6 @@ export function useTopics(subjectId: string | null, chapterId?: string | null) {
     // Enhance slug with hierarchical context to ensure uniqueness
     const slugParts = [];
 
-    // Add major area prefix if available
-    if (topic.major_area) {
-      const majorAreaSlug = topic.major_area.toLowerCase()
-        .replace(/\s+/g, '-')
-        .replace(/[^\w-]+/g, '-')
-        .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
-        .replace(/^-+|-+$/g, '');
-      slugParts.push(majorAreaSlug);
-    }
-
-    // Add topic level prefix
-    if (topic.topic_level) {
-      slugParts.push(`l${topic.topic_level}`);
-    }
-
     // Add syllabus code if available
     if (topic.syllabus_code) {
       const codeSlug = topic.syllabus_code.toLowerCase()
@@ -185,20 +168,8 @@ export function useTopics(subjectId: string | null, chapterId?: string | null) {
       return baseTitle;
     }
 
-    // For generic titles, enhance with hierarchical context
-    const genericTitles = ['introduction', 'overview', 'fundamentals', 'basics', 'principles', 'concepts'];
-    const isGeneric = genericTitles.some(generic =>
-      baseTitle.toLowerCase().includes(generic)
-    );
-
-    if (isGeneric && topic.major_area) {
-      // Enhance generic titles with major area context
-      const enhancedTitle = `${topic.major_area} ${baseTitle}`;
-      if (!existingTitles.has(enhancedTitle)) {
-        return enhancedTitle;
-      }
-      baseTitle = enhancedTitle;
-    }
+    // For generic titles, just add a counter
+    // (Chapter context is already provided through chapter_id relationship)
 
     // If still duplicate, add counter
     let finalTitle = baseTitle;

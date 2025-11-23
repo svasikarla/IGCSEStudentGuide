@@ -6,6 +6,15 @@ const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('../middleware/auth');
 const { requireAdmin } = require('../middleware/admin');
+const {
+  validateLLMGeneration,
+  validateCurriculumGeneration,
+  limitRequestSize
+} = require('../middleware/validation');
+const {
+  llmGenerationLimiter,
+  curriculumGenerationLimiter
+} = require('../middleware/rateLimiting');
 const OpenAI = require('openai');
 const GeminiService = require('../services/geminiService');
 const HuggingFaceService = require('../services/huggingFaceService');
@@ -118,10 +127,17 @@ router.options('*', (req, res) => {
   res.status(200).end();
 });
 
-// Apply both middlewares to protected LLM routes
-// This ensures only authenticated admin users can access these endpoints
-// TEMPORARILY DISABLED FOR DEVELOPMENT TESTING
-// router.use(verifyToken, requireAdmin);
+// ============================================================================
+// AUTHENTICATION & AUTHORIZATION MIDDLEWARE
+// ============================================================================
+// All routes below this point require:
+// 1. Valid JWT token (verifyToken middleware)
+// 2. Admin role in user metadata (requireAdmin middleware)
+//
+// Public routes above (GET /providers, GET /models) are NOT protected
+// Protected routes: POST /generate, POST /generate-json, POST /generate-curriculum
+// ============================================================================
+router.use(verifyToken, requireAdmin);
 
 /**
  * Helper function to get the appropriate LLM service based on provider
@@ -188,8 +204,10 @@ IMPORTANT: You must respond with a valid, parseable JSON object only.
 /**
  * Generate text content using LLM
  * POST /api/llm/generate
+ * Rate Limit: 10 requests per 15 minutes
+ * Validates: prompt (required), provider, model, temperature, max_tokens
  */
-router.post('/generate', async (req, res) => {
+router.post('/generate', llmGenerationLimiter, limitRequestSize(500), validateLLMGeneration, async (req, res) => {
   try {
     const {
       prompt,
@@ -198,10 +216,6 @@ router.post('/generate', async (req, res) => {
       max_tokens = 1000,
       provider = 'openai'
     } = req.body;
-
-    if (!prompt) {
-      return res.status(400).json({ error: 'Prompt is required' });
-    }
 
     const llmService = getLLMService(provider);
     const generatedText = await llmService.generateText(prompt, {
@@ -220,8 +234,10 @@ router.post('/generate', async (req, res) => {
 /**
  * Generate JSON content using LLM
  * POST /api/llm/generate-json
+ * Rate Limit: 10 requests per 15 minutes
+ * Validates: prompt (required), provider, model, temperature, max_tokens
  */
-router.post('/generate-json', async (req, res) => {
+router.post('/generate-json', llmGenerationLimiter, limitRequestSize(500), validateLLMGeneration, async (req, res) => {
   try {
     const {
       prompt,
@@ -230,10 +246,6 @@ router.post('/generate-json', async (req, res) => {
       max_tokens = 1000,
       provider = 'openai'
     } = req.body;
-    
-    if (!prompt) {
-      return res.status(400).json({ error: 'Prompt is required' });
-    }
 
     try {
       const llmService = getLLMService(provider);
@@ -267,8 +279,10 @@ router.post('/generate-json', async (req, res) => {
  *
  * Provides 50-100+ topics with complete IGCSE syllabus coverage
  * POST /api/llm/generate-curriculum
+ * Rate Limit: 3 requests per hour (expensive operation)
+ * Validates: subjectName, gradeLevel (required), curriculumBoard, tier, provider
  */
-router.post('/generate-curriculum', async (req, res) => {
+router.post('/generate-curriculum', curriculumGenerationLimiter, limitRequestSize(500), validateCurriculumGeneration, async (req, res) => {
   try {
     const {
       subjectName,
@@ -279,12 +293,6 @@ router.post('/generate-curriculum', async (req, res) => {
       temperature = 0.3,
       provider = 'openai'
     } = req.body;
-
-    if (!subjectName || !gradeLevel) {
-      return res.status(400).json({
-        error: 'Subject name and grade level are required'
-      });
-    }
 
     const llmService = getLLMService(provider);
 
@@ -324,24 +332,22 @@ router.post('/generate-curriculum', async (req, res) => {
       const detailedPrompt = `
         You are an expert ${curriculumBoard} curriculum designer.
 
-        For the major area "${area.title}" in "${subjectName}" (${gradeLevel}${tier ? `, ${tier} tier` : ''}), generate a comprehensive breakdown of ALL topics and subtopics.
+        For the chapter "${area.title}" in "${subjectName}" (${gradeLevel}${tier ? `, ${tier} tier` : ''}), generate a comprehensive breakdown of ALL topics.
 
-        Generate 8-15 topics with 2-4 subtopics each to ensure complete coverage of this curriculum area.
+        Generate 8-15 topics to ensure complete coverage of this curriculum chapter.
 
         IMPORTANT TITLE REQUIREMENTS:
         - Create SPECIFIC, DESCRIPTIVE titles that avoid generic terms
         - DO NOT use generic titles like "Introduction", "Overview", "Fundamentals", "Basics", "Principles"
         - Instead use specific titles like "Cell Structure Components", "DNA Replication Process", "Photosynthesis Mechanisms"
         - Each title must be unique and descriptive of the specific content
-        - Include the major area context in titles when helpful for clarity
+        - Topics will be organized within chapters, so no need to include chapter context in titles
 
         Return a JSON array where each object has:
         {
-          "title": "Specific, descriptive topic/subtopic title (avoid generic terms)",
+          "title": "Specific, descriptive topic title (avoid generic terms)",
           "description": "Brief description (1 sentence)",
-          "major_area": "${area.title}",
-          "topic_level": 2|3,
-          "syllabus_code": "${area.syllabus_code}.X" or "${area.syllabus_code}.X.Y",
+          "syllabus_code": "${area.syllabus_code}.X",
           "official_syllabus_ref": "Official reference if applicable",
           "difficulty_level": 1-5,
           "estimated_study_time_minutes": 30-90
@@ -361,21 +367,8 @@ router.post('/generate-curriculum', async (req, res) => {
         );
         const detailedTopics = JSON.parse(detailedJson);
 
-        // Add the major area as level 1
-        allTopics.push({
-          title: area.title,
-          description: area.description,
-          major_area: area.title,
-          topic_level: 1,
-          syllabus_code: area.syllabus_code,
-          official_syllabus_ref: area.official_syllabus_ref,
-          difficulty_level: 2,
-          estimated_study_time_minutes: 60,
-          curriculum_board: curriculumBoard,
-          tier: tier || null,
-        });
-
-        // Add all detailed topics
+        // Add all topics for this chapter
+        // Note: chapter_id will be assigned when topics are saved
         allTopics.push(...detailedTopics.map(topic => ({
           ...topic,
           curriculum_board: curriculumBoard,

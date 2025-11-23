@@ -7,6 +7,14 @@
 
 const express = require('express');
 const router = express.Router();
+const { verifyToken } = require('../middleware/auth');
+const { requireAdmin } = require('../middleware/admin');
+const {
+  validateSimplifiedGeneration,
+  limitRequestSize
+} = require('../middleware/validation');
+const { contentGenerationLimiter } = require('../middleware/rateLimiting');
+const { logError } = require('../utils/errorHandler');
 // Note: OpenAI service implementation is missing - will be handled in service selection
 // const { OpenAIService } = require('../services/openaiService'); // TODO: Implement this service
 const GeminiService = require('../services/geminiService');
@@ -114,11 +122,23 @@ function getLLMService(costTier = 'minimal') {
   }
 }
 
+// ============================================================================
+// AUTHENTICATION & AUTHORIZATION MIDDLEWARE
+// ============================================================================
+// Protected content generation routes (POST /quiz, /exam, /flashcards)
+// require authentication and admin privileges
+//
+// Public routes (GET /health, /cost-estimate) defined later are NOT protected
+// ============================================================================
+
 /**
  * Generate quiz questions directly without web scraping
  * POST /api/simplified-generation/quiz
+ * PROTECTED: Requires authentication and admin role
+ * Rate Limit: 20 requests per 15 minutes
+ * Validates: subject, topicTitle (required), questionCount, difficultyLevel, grade, costTier
  */
-router.post('/quiz', async (req, res) => {
+router.post('/quiz', contentGenerationLimiter, limitRequestSize(500), verifyToken, requireAdmin, validateSimplifiedGeneration, async (req, res) => {
   try {
     const {
       subject,
@@ -252,17 +272,13 @@ Return JSON format:
     res.json(response);
 
   } catch (error) {
-    console.error('Unexpected error in quiz generation:', {
-      errorName: error.name,
-      errorMessage: error.message,
-      errorStack: error.stack?.split('\n')?.[0] || 'No stack trace',
+    logError('SimplifiedGeneration.quiz', error, {
       requestData: { subject, topicTitle, costTier }
     });
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       error: 'Unexpected error in quiz generation',
-      details: error.message,
-      errorType: error.name || 'UnknownError',
+      message: error.message,
       timestamp: new Date().toISOString(),
       suggestion: 'Please check server logs and try again. If the issue persists, contact support.'
     });
@@ -272,8 +288,11 @@ Return JSON format:
 /**
  * Generate exam paper directly
  * POST /api/simplified-generation/exam
+ * PROTECTED: Requires authentication and admin role
+ * Rate Limit: 20 requests per 15 minutes
+ * Validates: subject, topicTitle (required), questionCount, difficultyLevel, grade, costTier
  */
-router.post('/exam', async (req, res) => {
+router.post('/exam', contentGenerationLimiter, limitRequestSize(500), verifyToken, requireAdmin, validateSimplifiedGeneration, async (req, res) => {
   try {
     const {
       subject,
@@ -408,17 +427,13 @@ Return JSON format:
     res.json(response);
 
   } catch (error) {
-    console.error('Unexpected error in exam generation:', {
-      errorName: error.name,
-      errorMessage: error.message,
-      errorStack: error.stack?.split('\n')?.[0] || 'No stack trace',
+    logError('SimplifiedGeneration.exam', error, {
       requestData: { subject, topicTitle, costTier, duration, totalMarks }
     });
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       error: 'Unexpected error in exam generation',
-      details: error.message,
-      errorType: error.name || 'UnknownError',
+      message: error.message,
       timestamp: new Date().toISOString(),
       suggestion: 'Please check server logs and try again. If the issue persists, contact support.'
     });
@@ -428,8 +443,11 @@ Return JSON format:
 /**
  * Generate flashcards directly
  * POST /api/simplified-generation/flashcards
+ * PROTECTED: Requires authentication and admin role
+ * Rate Limit: 20 requests per 15 minutes
+ * Validates: subject, topicTitle (required), cardCount, difficultyLevel, grade, costTier
  */
-router.post('/flashcards', async (req, res) => {
+router.post('/flashcards', contentGenerationLimiter, limitRequestSize(500), verifyToken, requireAdmin, validateSimplifiedGeneration, async (req, res) => {
   try {
     const {
       subject,
@@ -558,17 +576,13 @@ Return JSON format:
     res.json(response);
 
   } catch (error) {
-    console.error('Unexpected error in flashcard generation:', {
-      errorName: error.name,
-      errorMessage: error.message,
-      errorStack: error.stack?.split('\n')?.[0] || 'No stack trace',
+    logError('SimplifiedGeneration.flashcards', error, {
       requestData: { subject, topicTitle, costTier, cardCount }
     });
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       error: 'Unexpected error in flashcard generation',
-      details: error.message,
-      errorType: error.name || 'UnknownError',
+      message: error.message,
       timestamp: new Date().toISOString(),
       suggestion: 'Please check server logs and try again. If the issue persists, contact support.'
     });

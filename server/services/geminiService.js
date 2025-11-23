@@ -3,6 +3,7 @@
  * Handles text and JSON generation using Google's Generative AI
  */
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { logError, isDevelopment } = require('../utils/errorHandler');
 require('dotenv').config();
 
 class GeminiService {
@@ -74,15 +75,12 @@ class GeminiService {
       const response = await result.response;
       return response.text();
     } catch (error) {
-      // Enhanced error logging with request details
-      console.error('Gemini API error details:', {
-        errorName: error.name,
-        errorMessage: error.message,
+      // Enhanced error logging with request details (stack trace only in dev)
+      logError('GeminiService.generateText', error, {
         errorCode: error.code,
-        errorStack: error.stack?.split('\n')?.[0] || 'No stack trace',
         modelRequested: options.model || 'gemini-1.5-flash'
       });
-      
+
       // Check for common errors and provide more helpful messages
       if (error.message.includes('not found') || error.message.includes('does not exist')) {
         throw new Error(`Gemini model not found or unavailable. Try a different model.`);

@@ -10,7 +10,6 @@ interface TopicBrowserProps {
   onTopicSelect: (topicId: string) => void;
   loading?: boolean;
   className?: string;
-  useChapterView?: boolean; // Toggle between chapter and legacy view
 }
 
 interface GroupedTopics {
@@ -32,8 +31,7 @@ const TopicBrowser: React.FC<TopicBrowserProps> = ({
   selectedTopicId,
   onTopicSelect,
   loading = false,
-  className = '',
-  useChapterView = true
+  className = ''
 }) => {
   const { chapters } = useChapters(subjectId || null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -42,36 +40,11 @@ const TopicBrowser: React.FC<TopicBrowserProps> = ({
   const [contentFilter, setContentFilter] = useState<string>('all');
   const [expandedAreas, setExpandedAreas] = useState<Set<string>>(new Set());
 
-  // Group topics by major area and topic level
-  const groupedTopics = useMemo(() => {
-    const grouped: GroupedTopics = {};
-    
-    topics.forEach(topic => {
-      const majorArea = topic.major_area || 'Uncategorized';
-      const topicLevel = topic.topic_level || 1;
+  // Legacy major_area grouping removed - now using chapter-based organization exclusively
 
-      if (!grouped[majorArea]) {
-        grouped[majorArea] = {};
-      }
-      if (!grouped[majorArea][topicLevel]) {
-        grouped[majorArea][topicLevel] = [];
-      }
-      grouped[majorArea][topicLevel].push(topic);
-    });
-
-    // Sort topics within each group
-    Object.keys(grouped).forEach(majorArea => {
-      Object.keys(grouped[majorArea]).forEach(level => {
-        grouped[majorArea][parseInt(level)].sort((a, b) => a.title.localeCompare(b.title));
-      });
-    });
-
-    return grouped;
-  }, [topics]);
-
-  // Group topics by chapters (new hierarchical view)
+  // Group topics by chapters
   const chapterGroupedTopics = useMemo(() => {
-    if (!useChapterView || chapters.length === 0) {
+    if (chapters.length === 0) {
       return {};
     }
 
@@ -98,7 +71,7 @@ const TopicBrowser: React.FC<TopicBrowserProps> = ({
     });
 
     return grouped;
-  }, [topics, chapters, useChapterView]);
+  }, [topics, chapters]);
 
   // Filter topics based on search and filters
   const filteredTopics = useMemo(() => {
