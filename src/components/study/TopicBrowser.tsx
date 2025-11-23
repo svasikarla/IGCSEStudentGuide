@@ -12,12 +12,6 @@ interface TopicBrowserProps {
   className?: string;
 }
 
-interface GroupedTopics {
-  [majorArea: string]: {
-    [topicLevel: number]: Topic[];
-  };
-}
-
 interface ChapterGroupedTopics {
   [chapterId: string]: {
     chapter: Chapter;
@@ -38,7 +32,7 @@ const TopicBrowser: React.FC<TopicBrowserProps> = ({
   const [selectedDifficulty, setSelectedDifficulty] = useState<number | null>(null);
   const [selectedStudyTime, setSelectedStudyTime] = useState<string>('all');
   const [contentFilter, setContentFilter] = useState<string>('all');
-  const [expandedAreas, setExpandedAreas] = useState<Set<string>>(new Set());
+  const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
 
   // Legacy major_area grouping removed - now using chapter-based organization exclusively
 
@@ -102,67 +96,14 @@ const TopicBrowser: React.FC<TopicBrowserProps> = ({
     });
   }, [topics, searchTerm, selectedDifficulty, selectedStudyTime, contentFilter]);
 
-  // Get filtered grouped topics
-  const filteredGroupedTopics = useMemo(() => {
-    const filtered: GroupedTopics = {};
-    const filteredIds = new Set(filteredTopics.map(t => t.id));
-    
-    Object.keys(groupedTopics).forEach(majorArea => {
-      Object.keys(groupedTopics[majorArea]).forEach(level => {
-        const levelTopics = groupedTopics[majorArea][parseInt(level)].filter(topic => 
-          filteredIds.has(topic.id)
-        );
-        if (levelTopics.length > 0) {
-          if (!filtered[majorArea]) {
-            filtered[majorArea] = {};
-          }
-          filtered[majorArea][parseInt(level)] = levelTopics;
-        }
-      });
-    });
-
-    return filtered;
-  }, [groupedTopics, filteredTopics]);
-
-  const toggleArea = (majorArea: string) => {
-    const newExpanded = new Set(expandedAreas);
-    if (newExpanded.has(majorArea)) {
-      newExpanded.delete(majorArea);
+  const toggleChapter = (chapterId: string) => {
+    const newExpanded = new Set(expandedChapters);
+    if (newExpanded.has(chapterId)) {
+      newExpanded.delete(chapterId);
     } else {
-      newExpanded.add(majorArea);
+      newExpanded.add(chapterId);
     }
-    setExpandedAreas(newExpanded);
-  };
-
-  const getDifficultyLabel = (level: number): string => {
-    switch (level) {
-      case 1: return 'Beginner';
-      case 2: return 'Elementary';
-      case 3: return 'Intermediate';
-      case 4: return 'Advanced';
-      case 5: return 'Expert';
-      default: return 'Unknown';
-    }
-  };
-
-  const getDifficultyColor = (level: number): string => {
-    switch (level) {
-      case 1: return 'bg-green-100 text-green-800';
-      case 2: return 'bg-blue-100 text-blue-800';
-      case 3: return 'bg-yellow-100 text-yellow-800';
-      case 4: return 'bg-orange-100 text-orange-800';
-      case 5: return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getTopicLevelLabel = (level: number): string => {
-    switch (level) {
-      case 1: return 'Overview';
-      case 2: return 'Core Topics';
-      case 3: return 'Subtopics';
-      default: return `Level ${level}`;
-    }
+    setExpandedChapters(newExpanded);
   };
 
   if (loading) {
@@ -260,7 +201,7 @@ const TopicBrowser: React.FC<TopicBrowserProps> = ({
 
       {/* Topic Tree */}
       <div className="max-h-96 overflow-y-auto">
-        {Object.keys(filteredGroupedTopics).length === 0 ? (
+        {chapters.length === 0 ? (
           <div className="p-6 text-center text-neutral-500">
             <svg className="w-12 h-12 mx-auto mb-4 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -278,7 +219,7 @@ const TopicBrowser: React.FC<TopicBrowserProps> = ({
               Clear all filters
             </button>
           </div>
-        ) : useChapterView && chapters.length > 0 ? (
+        ) : (
           // Chapter-based view
           <div className="space-y-1">
             {Object.keys(chapterGroupedTopics)
@@ -311,14 +252,14 @@ const TopicBrowser: React.FC<TopicBrowserProps> = ({
 
                 if (filteredChapterTopics.length === 0) return null;
 
-                const isExpanded = expandedAreas.has(chapterId);
+                const isExpanded = expandedChapters.has(chapterId);
                 const topicsWithContent = filteredChapterTopics.filter(t => t.content && t.content.trim().length > 0).length;
 
                 return (
                   <div key={chapterId}>
                     {/* Chapter Header */}
                     <button
-                      onClick={() => toggleArea(chapterId)}
+                      onClick={() => toggleChapter(chapterId)}
                       className="w-full flex items-center justify-between p-3 hover:bg-neutral-50 transition-colors border-l-4"
                       style={{ borderLeftColor: chapter.color_hex }}
                     >
@@ -380,119 +321,6 @@ const TopicBrowser: React.FC<TopicBrowserProps> = ({
                   </div>
                 );
               }).filter(Boolean)}
-          </div>
-        ) : (
-          // Legacy major area view
-          <div className="space-y-1">
-            {Object.keys(filteredGroupedTopics)
-              .sort()
-              .map((majorArea) => {
-                const isExpanded = expandedAreas.has(majorArea);
-                const areaTopics = Object.values(filteredGroupedTopics[majorArea]).flat();
-                const topicsWithContent = areaTopics.filter(t => t.content && t.content.trim().length > 0).length;
-                
-                return (
-                  <div key={majorArea}>
-                    {/* Major Area Header */}
-                    <button
-                      onClick={() => toggleArea(majorArea)}
-                      className="w-full flex items-center justify-between p-3 hover:bg-neutral-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <svg 
-                          className={`w-4 h-4 text-neutral-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`} 
-                          fill="none" 
-                          stroke="currentColor" 
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                        <span className="font-medium text-neutral-900">{majorArea}</span>
-                        <span className="text-sm text-neutral-500">
-                          ({areaTopics.length} topics, {topicsWithContent} with content)
-                        </span>
-                      </div>
-                    </button>
-
-                    {/* Topic Levels */}
-                    {isExpanded && (
-                      <div className="ml-6 space-y-1">
-                        {Object.keys(filteredGroupedTopics[majorArea])
-                          .map(level => parseInt(level))
-                          .sort()
-                          .map((level) => (
-                            <div key={level}>
-                              {/* Level Header */}
-                              <div className="py-2 px-3 bg-neutral-50 border-l-2 border-neutral-200">
-                                <span className="text-sm font-medium text-neutral-700">
-                                  {getTopicLevelLabel(level)}
-                                </span>
-                              </div>
-                              
-                              {/* Topics in Level */}
-                              <div className="ml-4 space-y-1">
-                                {filteredGroupedTopics[majorArea][level].map((topic) => {
-                                  const isSelected = topic.id === selectedTopicId;
-                                  const hasContent = topic.content && topic.content.trim().length > 0;
-                                  
-                                  return (
-                                    <button
-                                      key={topic.id}
-                                      onClick={() => onTopicSelect(topic.id)}
-                                      className={`w-full text-left p-3 rounded-lg transition-all ${
-                                        isSelected 
-                                          ? 'bg-primary-50 border border-primary-200' 
-                                          : 'hover:bg-neutral-50 border border-transparent'
-                                      }`}
-                                    >
-                                      <div className="flex items-start justify-between gap-3">
-                                        <div className="flex-1 min-w-0">
-                                          <div className="flex items-center gap-2 mb-1">
-                                            <h4 className={`font-medium truncate ${
-                                              isSelected ? 'text-primary-900' : 'text-neutral-900'
-                                            }`}>
-                                              {topic.title}
-                                            </h4>
-                                            {!hasContent && (
-                                              <span className="flex-shrink-0 w-2 h-2 bg-amber-400 rounded-full" title="Content needed"></span>
-                                            )}
-                                          </div>
-                                          {topic.description && (
-                                            <p className="text-sm text-neutral-600 line-clamp-2">
-                                              {topic.description}
-                                            </p>
-                                          )}
-                                          <div className="flex items-center gap-3 mt-2">
-                                            <span className={`px-2 py-1 rounded text-xs font-medium ${getDifficultyColor(topic.difficulty_level)}`}>
-                                              {getDifficultyLabel(topic.difficulty_level)}
-                                            </span>
-                                            <span className="text-xs text-neutral-500">
-                                              {topic.estimated_study_time_minutes} min
-                                            </span>
-                                            {topic.syllabus_code && (
-                                              <span className="text-xs text-neutral-500 font-mono">
-                                                {topic.syllabus_code}
-                                              </span>
-                                            )}
-                                          </div>
-                                        </div>
-                                        {isSelected && (
-                                          <svg className="w-5 h-5 text-primary-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                          </svg>
-                                        )}
-                                      </div>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
           </div>
         )}
       </div>
