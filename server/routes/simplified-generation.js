@@ -7,6 +7,8 @@
 
 const express = require('express');
 const router = express.Router();
+const { verifyToken } = require('../middleware/auth');
+const { requireAdmin } = require('../middleware/admin');
 // Note: OpenAI service implementation is missing - will be handled in service selection
 // const { OpenAIService } = require('../services/openaiService'); // TODO: Implement this service
 const GeminiService = require('../services/geminiService');
@@ -114,11 +116,21 @@ function getLLMService(costTier = 'minimal') {
   }
 }
 
+// ============================================================================
+// AUTHENTICATION & AUTHORIZATION MIDDLEWARE
+// ============================================================================
+// Protected content generation routes (POST /quiz, /exam, /flashcards)
+// require authentication and admin privileges
+//
+// Public routes (GET /health, /cost-estimate) defined later are NOT protected
+// ============================================================================
+
 /**
  * Generate quiz questions directly without web scraping
  * POST /api/simplified-generation/quiz
+ * PROTECTED: Requires authentication and admin role
  */
-router.post('/quiz', async (req, res) => {
+router.post('/quiz', verifyToken, requireAdmin, async (req, res) => {
   try {
     const {
       subject,
@@ -272,8 +284,9 @@ Return JSON format:
 /**
  * Generate exam paper directly
  * POST /api/simplified-generation/exam
+ * PROTECTED: Requires authentication and admin role
  */
-router.post('/exam', async (req, res) => {
+router.post('/exam', verifyToken, requireAdmin, async (req, res) => {
   try {
     const {
       subject,
@@ -428,8 +441,9 @@ Return JSON format:
 /**
  * Generate flashcards directly
  * POST /api/simplified-generation/flashcards
+ * PROTECTED: Requires authentication and admin role
  */
-router.post('/flashcards', async (req, res) => {
+router.post('/flashcards', verifyToken, requireAdmin, async (req, res) => {
   try {
     const {
       subject,

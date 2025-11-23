@@ -118,10 +118,17 @@ router.options('*', (req, res) => {
   res.status(200).end();
 });
 
-// Apply both middlewares to protected LLM routes
-// This ensures only authenticated admin users can access these endpoints
-// TEMPORARILY DISABLED FOR DEVELOPMENT TESTING
-// router.use(verifyToken, requireAdmin);
+// ============================================================================
+// AUTHENTICATION & AUTHORIZATION MIDDLEWARE
+// ============================================================================
+// All routes below this point require:
+// 1. Valid JWT token (verifyToken middleware)
+// 2. Admin role in user metadata (requireAdmin middleware)
+//
+// Public routes above (GET /providers, GET /models) are NOT protected
+// Protected routes: POST /generate, POST /generate-json, POST /generate-curriculum
+// ============================================================================
+router.use(verifyToken, requireAdmin);
 
 /**
  * Helper function to get the appropriate LLM service based on provider

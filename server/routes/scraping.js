@@ -3,25 +3,16 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs').promises;
 const router = express.Router();
+const { verifyToken } = require('../middleware/auth');
+const { requireAdmin } = require('../middleware/admin');
 
-// Authentication middleware
-const authenticateAdmin = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({
-      success: false,
-      error: 'Authentication required'
-    });
-  }
-
-  // In a real implementation, you would verify the JWT token here
-  // For now, we'll assume the token is valid if present
-  next();
-};
-
-// Apply authentication to all routes
-router.use(authenticateAdmin);
+// ============================================================================
+// AUTHENTICATION & AUTHORIZATION MIDDLEWARE
+// ============================================================================
+// All scraping routes require authentication and admin privileges
+// Web scraping is an admin-only feature
+// ============================================================================
+router.use(verifyToken, requireAdmin);
 
 // In-memory job tracking (use Redis in production)
 const scrapingJobs = new Map();

@@ -7,6 +7,7 @@
 
 const express = require('express');
 const router = express.Router();
+const { verifyToken } = require('../middleware/auth');
 
 // Import embedding providers
 let openaiClient = null;
@@ -81,11 +82,21 @@ async function generateCohereEmbedding(text) {
   }
 }
 
+// ============================================================================
+// AUTHENTICATION MIDDLEWARE
+// ============================================================================
+// Embeddings are used for semantic search (student-facing feature)
+// Requires authentication but NOT admin privileges
+// Public routes: GET /providers, GET /health
+// Protected routes: POST /generate, POST /batch
+// ============================================================================
+
 /**
  * POST /api/embeddings/generate
  * Generate embedding for a text input
+ * PROTECTED: Requires authentication (for students & admins)
  */
-router.post('/generate', async (req, res) => {
+router.post('/generate', verifyToken, async (req, res) => {
   try {
     const { text, provider = 'openai' } = req.body;
 
@@ -147,8 +158,9 @@ router.post('/generate', async (req, res) => {
 /**
  * POST /api/embeddings/batch
  * Generate embeddings for multiple texts
+ * PROTECTED: Requires authentication (for students & admins)
  */
-router.post('/batch', async (req, res) => {
+router.post('/batch', verifyToken, async (req, res) => {
   try {
     const { texts, provider = 'openai' } = req.body;
 
