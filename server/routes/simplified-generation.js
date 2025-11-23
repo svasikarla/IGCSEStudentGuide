@@ -13,6 +13,7 @@ const {
   validateSimplifiedGeneration,
   limitRequestSize
 } = require('../middleware/validation');
+const { logError } = require('../utils/errorHandler');
 // Note: OpenAI service implementation is missing - will be handled in service selection
 // const { OpenAIService } = require('../services/openaiService'); // TODO: Implement this service
 const GeminiService = require('../services/geminiService');
@@ -269,17 +270,13 @@ Return JSON format:
     res.json(response);
 
   } catch (error) {
-    console.error('Unexpected error in quiz generation:', {
-      errorName: error.name,
-      errorMessage: error.message,
-      errorStack: error.stack?.split('\n')?.[0] || 'No stack trace',
+    logError('SimplifiedGeneration.quiz', error, {
       requestData: { subject, topicTitle, costTier }
     });
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       error: 'Unexpected error in quiz generation',
-      details: error.message,
-      errorType: error.name || 'UnknownError',
+      message: error.message,
       timestamp: new Date().toISOString(),
       suggestion: 'Please check server logs and try again. If the issue persists, contact support.'
     });
@@ -427,17 +424,13 @@ Return JSON format:
     res.json(response);
 
   } catch (error) {
-    console.error('Unexpected error in exam generation:', {
-      errorName: error.name,
-      errorMessage: error.message,
-      errorStack: error.stack?.split('\n')?.[0] || 'No stack trace',
+    logError('SimplifiedGeneration.exam', error, {
       requestData: { subject, topicTitle, costTier, duration, totalMarks }
     });
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       error: 'Unexpected error in exam generation',
-      details: error.message,
-      errorType: error.name || 'UnknownError',
+      message: error.message,
       timestamp: new Date().toISOString(),
       suggestion: 'Please check server logs and try again. If the issue persists, contact support.'
     });
@@ -579,17 +572,13 @@ Return JSON format:
     res.json(response);
 
   } catch (error) {
-    console.error('Unexpected error in flashcard generation:', {
-      errorName: error.name,
-      errorMessage: error.message,
-      errorStack: error.stack?.split('\n')?.[0] || 'No stack trace',
+    logError('SimplifiedGeneration.flashcards', error, {
       requestData: { subject, topicTitle, costTier, cardCount }
     });
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       error: 'Unexpected error in flashcard generation',
-      details: error.message,
-      errorType: error.name || 'UnknownError',
+      message: error.message,
       timestamp: new Date().toISOString(),
       suggestion: 'Please check server logs and try again. If the issue persists, contact support.'
     });
