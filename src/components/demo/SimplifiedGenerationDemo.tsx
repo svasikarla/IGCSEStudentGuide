@@ -5,9 +5,8 @@
  * and compares it with the existing method.
  */
 
-import React, { useState } from 'react';
-import { useSimplifiedQuizGeneration, useSimplifiedFlashcardGeneration } from '../../hooks/useSimplifiedGeneration';
-import { useGenerationCostEstimator } from '../../hooks/useSimplifiedGeneration';
+import { useState } from 'react';
+import { useQuizGeneration, useFlashcardGeneration } from '../../hooks/useContentGeneration';
 
 interface GenerationResult {
   type: 'quiz' | 'flashcards';
@@ -29,37 +28,57 @@ export function SimplifiedGenerationDemo() {
   });
 
   const [results, setResults] = useState<GenerationResult[]>([]);
-  const [activeTab, setActiveTab] = useState('quiz');
 
-  const { generateAndSaveQuiz, loading: quizLoading, error: quizError, progress: quizProgress, estimatedCost: quizCost } = useSimplifiedQuizGeneration();
-  const { generateAndSaveFlashcards, loading: flashcardLoading, error: flashcardError, progress: flashcardProgress, estimatedCost: flashcardCost } = useSimplifiedFlashcardGeneration();
-  const { estimateCost, compareCosts } = useGenerationCostEstimator();
+  const { generateAndSaveQuiz, loading: quizLoading, error: quizError } = useQuizGeneration();
+  const { generateAndSaveFlashcards, loading: flashcardLoading, error: flashcardError } = useFlashcardGeneration();
+
+  const [quizCost, setQuizCost] = useState(0);
+  const [flashcardCost, setFlashcardCost] = useState(0);
+
+  // Helper to get cost comparison
+  const getCostComparison = () => {
+    return {
+      quiz: {
+        minimal: 0.0001 * formData.questionCount,
+        standard: 0.0003 * formData.questionCount
+      },
+      flashcards: {
+        minimal: 0.00008 * formData.cardCount
+      }
+    };
+  };
+
+  const costComparison = getCostComparison();
 
   const handleGenerateQuiz = async () => {
     const startTime = Date.now();
-    
+
     try {
       const result = await generateAndSaveQuiz(
         'demo-topic-id', // Mock topic ID for demo
-        formData.subject,
-        formData.topicTitle,
-        formData.syllabusCode,
-        formData.questionCount,
-        3, // difficulty level
-        formData.costTier
+        {
+          subject: formData.subject,
+          topicTitle: formData.topicTitle,
+          syllabusCode: formData.syllabusCode,
+          questionCount: formData.questionCount,
+          difficultyLevel: 3,
+          grade: 10
+        }
       );
 
       if (result) {
         const duration = Date.now() - startTime;
+        const estimatedCost = costComparison.quiz[formData.costTier === 'standard' ? 'standard' : 'minimal'];
         const newResult: GenerationResult = {
           type: 'quiz',
-          content: result.questions,
-          cost: result.estimatedCost,
+          content: result,
+          cost: estimatedCost,
           duration,
           quality: 'excellent',
           approach: 'simplified'
         };
         setResults(prev => [...prev, newResult]);
+        setQuizCost(estimatedCost);
       }
     } catch (error) {
       console.error('Quiz generation failed:', error);
@@ -68,35 +87,37 @@ export function SimplifiedGenerationDemo() {
 
   const handleGenerateFlashcards = async () => {
     const startTime = Date.now();
-    
+
     try {
       const result = await generateAndSaveFlashcards(
         'demo-topic-id', // Mock topic ID for demo
-        formData.subject,
-        formData.topicTitle,
-        formData.syllabusCode,
-        formData.cardCount,
-        formData.costTier
+        {
+          subject: formData.subject,
+          topicTitle: formData.topicTitle,
+          syllabusCode: formData.syllabusCode,
+          cardCount: formData.cardCount,
+          grade: 10
+        }
       );
 
       if (result) {
         const duration = Date.now() - startTime;
+        const estimatedCost = costComparison.flashcards.minimal;
         const newResult: GenerationResult = {
           type: 'flashcards',
-          content: result.flashcards,
-          cost: result.estimatedCost,
+          content: result,
+          cost: estimatedCost,
           duration,
           quality: 'excellent',
           approach: 'simplified'
         };
         setResults(prev => [...prev, newResult]);
+        setFlashcardCost(estimatedCost);
       }
     } catch (error) {
       console.error('Flashcard generation failed:', error);
     }
   };
-
-  const costComparison = compareCosts(formData.questionCount);
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
@@ -236,7 +257,7 @@ export function SimplifiedGenerationDemo() {
               {quizLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Generating... ({quizProgress}%)
+                  Generating...
                 </>
               ) : (
                 'Generate Quiz Questions'
@@ -268,7 +289,7 @@ export function SimplifiedGenerationDemo() {
               {flashcardLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Generating... ({flashcardProgress}%)
+                  Generating...
                 </>
               ) : (
                 'Generate Flashcards'

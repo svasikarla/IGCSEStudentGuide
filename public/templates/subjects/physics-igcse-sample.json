@@ -1,0 +1,67 @@
+{
+  "subject": {
+    "name": "Physics",
+    "code": "PHYS",
+    "description": "Cambridge IGCSE Physics (0625) - Study of matter, energy, and their interactions including mechanics, waves, electricity, magnetism, and nuclear physics",
+    "color_hex": "#4ECDC4",
+    "icon_name": "atom",
+    "curriculum_board": "Cambridge IGCSE",
+    "grade_levels": [9, 10]
+  },
+  "chapters": [
+    {
+      "title": "1. General Physics",
+      "description": "Fundamental concepts including measurements, motion, and forces",
+      "syllabus_code": "1",
+      "tier": "Core",
+      "display_order": 1,
+      "topics": [
+        {
+          "title": "1.1 Length and Time",
+          "description": "Measuring length, time, and calculating derived quantities",
+          "difficulty_level": 1,
+          "estimated_study_time_minutes": 45,
+          "learning_objectives": [
+            "Use appropriate instruments to measure length and time",
+            "Understand the concept of precision",
+            "Calculate speed using distance and time"
+          ],
+          "display_order": 1
+        },
+        {
+          "title": "1.2 Motion",
+          "description": "Understanding speed, velocity, and acceleration",
+          "difficulty_level": 2,
+          "estimated_study_time_minutes": 60,
+          "learning_objectives": [
+            "Define and calculate speed and velocity",
+            "Interpret distance-time and speed-time graphs",
+            "Understand acceleration and deceleration"
+          ],
+          "display_order": 2
+        }
+      ]
+    },
+    {
+      "title": "2. Thermal Physics",
+      "description": "Study of heat, temperature, and thermal properties",
+      "syllabus_code": "2",
+      "tier": "Core",
+      "display_order": 2,
+      "topics": [
+        {
+          "title": "2.1 Temperature",
+          "description": "Measuring temperature and understanding thermal expansion",
+          "difficulty_level": 1,
+          "estimated_study_time_minutes": 40,
+          "learning_objectives": [
+            "Use thermometers correctly",
+            "Understand temperature scales",
+            "Explain thermal expansion"
+          ],
+          "display_order": 1
+        }
+      ]
+    }
+  ]
+}

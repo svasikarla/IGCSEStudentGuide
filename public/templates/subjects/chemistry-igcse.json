@@ -1,0 +1,187 @@
+{
+  "subject": {
+    "name": "Chemistry",
+    "code": "CHEM",
+    "description": "Cambridge IGCSE Chemistry (0620) - Comprehensive coverage of core and extended topics including atomic structure, bonding, states of matter, chemical reactions, acids and bases, the periodic table, metals, air and water, sulfur, carbonates, and organic chemistry",
+    "color_hex": "#FF6B6B",
+    "icon_name": "flask",
+    "curriculum_board": "Cambridge IGCSE",
+    "grade_levels": [9, 10]
+  },
+  "chapters": [
+    {
+      "title": "1. Particulate Nature of Matter",
+      "description": "Understanding the composition and behavior of matter at the particle level",
+      "syllabus_code": "1",
+      "tier": "Core",
+      "display_order": 1,
+      "estimated_study_time_minutes": 240,
+      "learning_objectives": [
+        "Describe the states of matter and explain their properties",
+        "Apply the kinetic particle theory to explain physical changes",
+        "Understand diffusion and Brownian motion"
+      ],
+      "topics": [
+        {
+          "title": "1.1 States of Matter",
+          "description": "Properties and behavior of solids, liquids, and gases",
+          "content": "# States of Matter\n\n## Learning Objectives\n- Describe the properties of solids, liquids, and gases\n- Explain changes of state in terms of kinetic particle theory\n- Understand the terms melting, boiling, evaporation, freezing, condensation and sublimation\n\n## Key Concepts\n\n### Solids\n- Particles are closely packed in a regular arrangement\n- Particles vibrate but cannot move from their positions\n- Definite shape and volume\n- Cannot be compressed\n\n### Liquids\n- Particles are close together but can move past each other\n- Take the shape of their container\n- Definite volume but no definite shape\n- Cannot be compressed significantly\n\n### Gases\n- Particles are far apart and move randomly\n- Fill their container completely\n- No definite shape or volume\n- Can be compressed easily",
+          "difficulty_level": 1,
+          "estimated_study_time_minutes": 45,
+          "learning_objectives": [
+            "Describe the properties of solids, liquids, and gases",
+            "Explain the kinetic particle theory"
+          ],
+          "display_order": 1
+        },
+        {
+          "title": "1.2 Atoms, Elements and Compounds",
+          "description": "Understanding atomic structure and chemical composition",
+          "content": "# Atoms, Elements and Compounds\n\n## Atoms\n- Smallest particle of an element\n- Cannot be divided by chemical means\n- Made up of protons, neutrons, and electrons\n\n## Elements\n- Made of only one type of atom\n- Cannot be broken down into simpler substances\n- Examples: Oxygen (O), Gold (Au), Carbon (C)\n\n## Compounds\n- Made of two or more elements chemically bonded\n- Have different properties from constituent elements\n- Examples: Water (H₂O), Carbon dioxide (CO₂), Sodium chloride (NaCl)",
+          "difficulty_level": 2,
+          "estimated_study_time_minutes": 60,
+          "learning_objectives": [
+            "Define atoms, elements, and compounds",
+            "Understand atomic structure",
+            "Describe molecular and empirical formulas"
+          ],
+          "display_order": 2
+        },
+        {
+          "title": "1.3 Atomic Structure",
+          "description": "Protons, neutrons, electrons, and the nuclear model",
+          "content": "# Atomic Structure\n\n## Subatomic Particles\n\n| Particle | Charge | Mass | Location |\n|----------|--------|------|----------|\n| Proton   | +1     | 1    | Nucleus  |\n| Neutron  | 0      | 1    | Nucleus  |\n| Electron | -1     | 1/1840 | Shells |\n\n## Key Terms\n- **Atomic number**: Number of protons in an atom\n- **Mass number**: Total number of protons and neutrons\n- **Isotopes**: Atoms of the same element with different numbers of neutrons",
+          "difficulty_level": 2,
+          "estimated_study_time_minutes": 50,
+          "learning_objectives": [
+            "Describe the structure of an atom",
+            "Define atomic number and mass number",
+            "Understand isotopes"
+          ],
+          "display_order": 3
+        },
+        {
+          "title": "1.4 Chemical Formulae",
+          "description": "Writing and interpreting chemical formulas",
+          "content": "# Chemical Formulae\n\n## Types of Formulas\n\n### Molecular Formula\n- Shows actual number of atoms in a molecule\n- Example: H₂O (water), C₆H₁₂O₆ (glucose)\n\n### Empirical Formula\n- Simplest whole number ratio of atoms\n- Example: CH₂O (for glucose C₆H₁₂O₆)\n\n## Ionic Compounds\n- Write positive ion first, then negative ion\n- Balance charges to make neutral compound\n- Example: Na⁺ + Cl⁻ → NaCl",
+          "difficulty_level": 2,
+          "estimated_study_time_minutes": 55,
+          "learning_objectives": [
+            "Write chemical formulas correctly",
+            "Distinguish between molecular and empirical formulas",
+            "Understand ionic compound formulas"
+          ],
+          "display_order": 4
+        }
+      ]
+    },
+    {
+      "title": "2. Experimental Techniques",
+      "description": "Essential laboratory skills and separation methods",
+      "syllabus_code": "2",
+      "tier": "Core",
+      "display_order": 2,
+      "estimated_study_time_minutes": 200,
+      "learning_objectives": [
+        "Understand laboratory safety procedures",
+        "Perform separation techniques",
+        "Use appropriate apparatus for measurements"
+      ],
+      "topics": [
+        {
+          "title": "2.1 Laboratory Safety",
+          "description": "Safe practices in the chemistry laboratory",
+          "content": "# Laboratory Safety\n\n## Safety Rules\n1. Wear safety goggles at all times\n2. Tie back long hair\n3. No eating or drinking in the lab\n4. Know the location of safety equipment\n5. Follow instructions carefully\n6. Report all accidents immediately\n\n## Hazard Symbols\n- **Toxic**: Poisonous substances\n- **Corrosive**: Burns skin and materials\n- **Flammable**: Catches fire easily\n- **Oxidizing**: Provides oxygen for combustion",
+          "difficulty_level": 1,
+          "estimated_study_time_minutes": 30,
+          "learning_objectives": [
+            "Identify laboratory hazards",
+            "Follow safety procedures",
+            "Recognize hazard symbols"
+          ],
+          "display_order": 1
+        },
+        {
+          "title": "2.2 Separation Techniques",
+          "description": "Methods to separate mixtures",
+          "content": "# Separation Techniques\n\n## Common Methods\n\n### Filtration\n- Separates insoluble solid from liquid\n- Uses filter paper and funnel\n\n### Crystallization\n- Separates soluble solid from solution\n- Involves evaporation and cooling\n\n### Distillation\n- Separates liquids with different boiling points\n- Uses heating and condensing\n\n### Chromatography\n- Separates colored substances\n- Uses differences in solubility",
+          "difficulty_level": 2,
+          "estimated_study_time_minutes": 75,
+          "learning_objectives": [
+            "Describe different separation methods",
+            "Choose appropriate technique for a mixture",
+            "Perform basic separation procedures"
+          ],
+          "display_order": 2
+        },
+        {
+          "title": "2.3 Measurement and Accuracy",
+          "description": "Using apparatus correctly and recording measurements",
+          "content": "# Measurement and Accuracy\n\n## Common Apparatus\n- **Measuring cylinder**: Volume measurements (±0.5 mL)\n- **Burette**: Precise volume delivery (±0.05 mL)\n- **Pipette**: Fixed volume transfer (±0.05 mL)\n- **Balance**: Mass measurements (varies by balance)\n\n## Recording Results\n- Write to appropriate precision\n- Include units\n- Use tables for multiple measurements\n- Calculate averages when appropriate",
+          "difficulty_level": 2,
+          "estimated_study_time_minutes": 45,
+          "learning_objectives": [
+            "Use laboratory apparatus correctly",
+            "Record measurements accurately",
+            "Understand precision and accuracy"
+          ],
+          "display_order": 3
+        }
+      ]
+    },
+    {
+      "title": "3. Atoms, Elements and Compounds",
+      "description": "Chemical structure and the periodic table",
+      "syllabus_code": "3",
+      "tier": "Core",
+      "display_order": 3,
+      "estimated_study_time_minutes": 180,
+      "learning_objectives": [
+        "Understand the periodic table structure",
+        "Describe properties of metals and non-metals",
+        "Explain trends in the periodic table"
+      ],
+      "topics": [
+        {
+          "title": "3.1 The Periodic Table",
+          "description": "Organization and patterns in the periodic table",
+          "content": "# The Periodic Table\n\n## Structure\n- Elements arranged by atomic number\n- Rows called **periods**\n- Columns called **groups**\n\n## Groups\n- Group 1: Alkali metals\n- Group 2: Alkaline earth metals\n- Group 17: Halogens\n- Group 18: Noble gases\n\n## Trends\n- Reactivity increases down Group 1\n- Reactivity decreases down Group 17\n- Noble gases are unreactive",
+          "difficulty_level": 2,
+          "estimated_study_time_minutes": 60,
+          "learning_objectives": [
+            "Describe the periodic table structure",
+            "Identify groups and periods",
+            "Explain periodic trends"
+          ],
+          "display_order": 1
+        },
+        {
+          "title": "3.2 Metals and Non-Metals",
+          "description": "Properties and differences between metals and non-metals",
+          "content": "# Metals and Non-Metals\n\n## Metals\n- Shiny appearance (lustrous)\n- Good conductors of heat and electricity\n- Malleable (can be hammered into sheets)\n- Ductile (can be drawn into wires)\n- High melting and boiling points (usually)\n\n## Non-Metals\n- Dull appearance\n- Poor conductors (insulators)\n- Brittle when solid\n- Low melting and boiling points (usually)\n- Various colors and states at room temperature",
+          "difficulty_level": 1,
+          "estimated_study_time_minutes": 40,
+          "learning_objectives": [
+            "Compare properties of metals and non-metals",
+            "Classify elements as metals or non-metals",
+            "Explain uses based on properties"
+          ],
+          "display_order": 2
+        },
+        {
+          "title": "3.3 Electronic Configuration",
+          "description": "Arrangement of electrons in atoms",
+          "content": "# Electronic Configuration\n\n## Electron Shells\n- Electrons occupy shells around the nucleus\n- First shell holds maximum 2 electrons\n- Second shell holds maximum 8 electrons\n- Third shell holds maximum 8 electrons (for first 20 elements)\n\n## Examples\n- Hydrogen (1): 1\n- Carbon (6): 2,4\n- Oxygen (8): 2,6\n- Sodium (11): 2,8,1\n- Chlorine (17): 2,8,7\n\n## Valence Electrons\n- Electrons in outermost shell\n- Determine chemical properties\n- Used in bonding",
+          "difficulty_level": 3,
+          "estimated_study_time_minutes": 50,
+          "learning_objectives": [
+            "Write electronic configurations",
+            "Understand the shell model",
+            "Relate configuration to group number"
+          ],
+          "display_order": 3
+        }
+      ]
+    }
+  ]
+}

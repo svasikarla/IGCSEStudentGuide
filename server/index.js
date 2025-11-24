@@ -4,10 +4,10 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 
 // Import routes
-const llmRoutes = require('./routes/llm');
+const contentGenerationRoutes = require('./routes/content-generation');
 const embeddingsRoutes = require('./routes/embeddings');
 const scrapingRoutes = require('./routes/scraping');
-const simplifiedGenerationRoutes = require('./routes/simplified-generation');
+const subjectsRoutes = require('./routes/subjects');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -31,8 +31,8 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is running' });
 });
 
-// Use the LLM routes with admin protection
-app.use('/api/llm', llmRoutes);
+// Use the unified content generation routes (replaces llm.js and simplified-generation.js)
+app.use('/api/content-generation', contentGenerationRoutes);
 
 // Use the embeddings routes (no admin protection needed for search)
 app.use('/api/embeddings', embeddingsRoutes);
@@ -40,14 +40,16 @@ app.use('/api/embeddings', embeddingsRoutes);
 // Use the scraping routes with admin protection
 app.use('/api/scraping', scrapingRoutes);
 
-// Use the simplified generation routes (cost-optimized content generation)
-app.use('/api/simplified-generation', simplifiedGenerationRoutes);
+// Use the subjects routes with teacher protection
+app.use('/api/subjects', subjectsRoutes);
 
 // Start server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
   console.log(`Health check: http://localhost:${port}/api/health`);
-  console.log(`LLM endpoints (admin only): http://localhost:${port}/api/llm/generate`);
-  console.log(`Simplified generation: http://localhost:${port}/api/simplified-generation/quiz`);
+  console.log(`Content generation: http://localhost:${port}/api/content-generation/quiz`);
+  console.log(`Provider info: http://localhost:${port}/api/content-generation/providers`);
   console.log(`Embeddings endpoints: http://localhost:${port}/api/embeddings/generate`);
+  console.log(`Subjects API: http://localhost:${port}/api/subjects`);
+  console.log(`Bulk subject import: http://localhost:${port}/api/subjects/bulk`);
 });

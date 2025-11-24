@@ -3,8 +3,9 @@ import { useSubjects, Subject } from '../../hooks/useSubjects';
 import SubjectList from './SubjectList';
 import SubjectGeneratorForm from './SubjectGeneratorForm';
 import SubjectEditForm from './SubjectEditForm';
+import SubjectImportWizard from './SubjectImportWizard';
 
-type ActiveView = 'create' | 'edit' | 'list';
+type ActiveView = 'create' | 'edit' | 'list' | 'import';
 
 const SubjectManagement: React.FC = () => {
   const { subjects, loading, error } = useSubjects();
@@ -98,6 +99,21 @@ const SubjectManagement: React.FC = () => {
             </span>
           </button>
           <button
+            onClick={() => setActiveView('import')}
+            className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
+              activeView === 'import'
+                ? 'bg-green-600 text-white shadow-medium hover:bg-green-700'
+                : 'bg-white text-neutral-700 border border-neutral-200 hover:bg-neutral-50 hover:border-neutral-300 shadow-soft'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              Bulk Import
+            </span>
+          </button>
+          <button
             onClick={() => setActiveView('list')}
             className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
               activeView === 'list'
@@ -134,72 +150,82 @@ const SubjectManagement: React.FC = () => {
 
         {/* Right main area - Forms (full width on mobile when not in list view) */}
         <div className={`lg:col-span-7 ${activeView === 'list' ? 'hidden lg:block' : 'block'}`}>
-          <div className="bg-white rounded-2xl shadow-soft border border-neutral-200 p-8">
-            {activeView === 'create' && (
-              <SubjectGeneratorForm onGenerationComplete={handleGenerationComplete} />
-            )}
+          {activeView === 'import' ? (
+            <SubjectImportWizard
+              onImportComplete={() => {
+                handleGenerationComplete();
+                setActiveView('list');
+              }}
+              onCancel={() => setActiveView('create')}
+            />
+          ) : (
+            <div className="bg-white rounded-2xl shadow-soft border border-neutral-200 p-8">
+              {activeView === 'create' && (
+                <SubjectGeneratorForm onGenerationComplete={handleGenerationComplete} />
+              )}
+
+              {activeView === 'edit' && editingSubject && (
+                <SubjectEditForm
+                  subject={editingSubject}
+                  onEditComplete={handleEditComplete}
+                  onCancel={() => setActiveView('create')}
+                />
+              )}
             
-            {activeView === 'edit' && editingSubject && (
-              <SubjectEditForm 
-                subject={editingSubject}
-                onEditComplete={handleEditComplete}
-                onCancel={() => setActiveView('create')}
-              />
-            )}
-            
-            {activeView === 'list' && selectedSubject && (
-              <div className="lg:hidden">
-                {/* Mobile view for selected subject details */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-12 h-12 rounded-lg flex items-center justify-center"
-                      style={{ backgroundColor: selectedSubject.color_hex }}
-                    >
-                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2l3.09 6.26L22 9l-5 4.87L18.18 21 12 17.77 5.82 21 7 13.87 2 9l6.91-.74L12 2z" />
-                      </svg>
+              {activeView === 'list' && selectedSubject && (
+                <div className="lg:hidden">
+                  {/* Mobile view for selected subject details */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-12 h-12 rounded-lg flex items-center justify-center"
+                        style={{ backgroundColor: selectedSubject.color_hex }}
+                      >
+                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 2l3.09 6.26L22 9l-5 4.87L18.18 21 12 17.77 5.82 21 7 13.87 2 9l6.91-.74L12 2z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">{selectedSubject.name}</h3>
+                        <p className="text-sm text-gray-500">{selectedSubject.code}</p>
+                      </div>
                     </div>
+
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{selectedSubject.name}</h3>
-                      <p className="text-sm text-gray-500">{selectedSubject.code}</p>
+                      <h4 className="font-medium text-gray-900 mb-2">Description</h4>
+                      <p className="text-gray-600">{selectedSubject.description}</p>
                     </div>
-                  </div>
-                  
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Description</h4>
-                    <p className="text-gray-600">{selectedSubject.description}</p>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="font-medium text-gray-900">Display Order:</span>
-                      <span className="ml-2 text-gray-600">{selectedSubject.display_order}</span>
+
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium text-gray-900">Display Order:</span>
+                        <span className="ml-2 text-gray-600">{selectedSubject.display_order}</span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-900">Grade Levels:</span>
+                        <span className="ml-2 text-gray-600">{selectedSubject.grade_levels?.join(', ') || 'N/A'}</span>
+                      </div>
                     </div>
-                    <div>
-                      <span className="font-medium text-gray-900">Grade Levels:</span>
-                      <span className="ml-2 text-gray-600">{selectedSubject.grade_levels?.join(', ') || 'N/A'}</span>
+
+                    <div className="flex gap-2 pt-4">
+                      <button
+                        onClick={() => handleSubjectEdit(selectedSubject)}
+                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                      >
+                        Edit Subject
+                      </button>
+                      <button
+                        onClick={() => setSelectedSubject(null)}
+                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+                      >
+                        Close
+                      </button>
                     </div>
-                  </div>
-                  
-                  <div className="flex gap-2 pt-4">
-                    <button
-                      onClick={() => handleSubjectEdit(selectedSubject)}
-                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                    >
-                      Edit Subject
-                    </button>
-                    <button
-                      onClick={() => setSelectedSubject(null)}
-                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
-                    >
-                      Close
-                    </button>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
