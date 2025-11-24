@@ -7,15 +7,9 @@
  * All generation endpoints now require authentication (Teacher/Admin role).
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001/api';
-
-// Initialize Supabase client for auth
-const supabase = createClient(
-  process.env.REACT_APP_SUPABASE_URL || '',
-  process.env.REACT_APP_SUPABASE_ANON_KEY || ''
-);
 
 /**
  * Get authentication headers with current user's token
