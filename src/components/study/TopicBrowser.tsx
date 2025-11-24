@@ -71,7 +71,7 @@ const TopicBrowser: React.FC<TopicBrowserProps> = ({
   const filteredTopics = useMemo(() => {
     return topics.filter(topic => {
       // Search filter
-      const matchesSearch = searchTerm === '' || 
+      const matchesSearch = searchTerm === '' ||
         topic.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         topic.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (topic.syllabus_code && topic.syllabus_code.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -126,7 +126,7 @@ const TopicBrowser: React.FC<TopicBrowserProps> = ({
       {/* Header */}
       <div className="p-6 border-b border-neutral-200">
         <h3 className="text-lg font-semibold text-neutral-900 mb-4">Browse Topics</h3>
-        
+
         {/* Search */}
         <div className="relative mb-4">
           <input
@@ -193,7 +193,7 @@ const TopicBrowser: React.FC<TopicBrowserProps> = ({
         {/* Results Summary */}
         <div className="mt-4 text-sm text-neutral-600">
           Showing {filteredTopics.length} of {topics.length} topics
-          {useChapterView && chapters.length > 0 && (
+          {chapters.length > 0 && (
             <span className="ml-2 text-primary-600">• Chapter view</span>
           )}
         </div>
@@ -293,11 +293,10 @@ const TopicBrowser: React.FC<TopicBrowserProps> = ({
                           <button
                             key={topic.id}
                             onClick={() => onTopicSelect(topic.id)}
-                            className={`w-full text-left p-3 rounded-lg transition-colors ${
-                              selectedTopicId === topic.id
+                            className={`w-full text-left p-3 rounded-lg transition-colors ${selectedTopicId === topic.id
                                 ? 'bg-primary-50 border border-primary-200'
                                 : 'hover:bg-neutral-50 border border-transparent'
-                            }`}
+                              }`}
                           >
                             <div className="flex items-start justify-between">
                               <div className="flex-1">

@@ -14,7 +14,7 @@ const TopicsPage: React.FC = () => {
   const [currentSubject, setCurrentSubject] = useState<any>(null);
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [showBulkGenerator, setShowBulkGenerator] = useState(false);
-  
+
   // Get authentication status and admin privileges
   const { isAdmin } = useAuth();
 
@@ -57,7 +57,7 @@ const TopicsPage: React.FC = () => {
     return (
       <div>
         <div className="flex items-center mb-8">
-          <button 
+          <button
             onClick={handleBack}
             className="mr-4 p-2 rounded-full hover:bg-gray-100"
           >
@@ -67,7 +67,7 @@ const TopicsPage: React.FC = () => {
           </button>
           <h1>Loading Topics...</h1>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="bg-white p-6 rounded-lg shadow-md animate-pulse">
@@ -87,7 +87,7 @@ const TopicsPage: React.FC = () => {
     return (
       <div>
         <div className="flex items-center mb-8">
-          <button 
+          <button
             onClick={handleBack}
             className="mr-4 p-2 rounded-full hover:bg-gray-100"
           >
@@ -97,12 +97,12 @@ const TopicsPage: React.FC = () => {
           </button>
           <h1>Topics</h1>
         </div>
-        
+
         <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
           <h3 className="text-lg font-semibold">Error loading topics</h3>
           <p>{error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
             Try Again
@@ -117,7 +117,7 @@ const TopicsPage: React.FC = () => {
     return (
       <div>
         <div className="flex items-center mb-8">
-          <button 
+          <button
             onClick={handleBack}
             className="mr-4 p-2 rounded-full hover:bg-gray-100"
           >
@@ -127,12 +127,12 @@ const TopicsPage: React.FC = () => {
           </button>
           <h1>Subject Not Found</h1>
         </div>
-        
+
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 p-4 rounded-lg">
           <h3 className="text-lg font-semibold">Subject not found</h3>
           <p>The subject you're looking for doesn't exist or has been removed.</p>
-          <button 
-            onClick={handleBack} 
+          <button
+            onClick={handleBack}
             className="mt-2 px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700"
           >
             Back to Subjects
@@ -212,7 +212,6 @@ const TopicsPage: React.FC = () => {
               selectedTopicId={selectedTopicId}
               onTopicSelect={handleTopicSelect}
               loading={loading}
-              useChapterView={true}
             />
           </div>
 
