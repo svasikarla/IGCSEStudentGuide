@@ -102,6 +102,7 @@ const generateSingleTopicContent = async (
       authToken,
       provider,
       model,
+      maxTokens: 4000, // Increase token limit for detailed content
     });
 
     if (result && result.content && isChemContent(subjectName)) {
@@ -160,8 +161,8 @@ const isChemistryContent = (subjectName: string): boolean => {
   if (!subjectName) return false;
   const normalizedSubject = subjectName.toLowerCase().trim();
   return normalizedSubject.includes('chemistry') ||
-         normalizedSubject.includes('chemical') ||
-         normalizedSubject === 'chem';
+    normalizedSubject.includes('chemical') ||
+    normalizedSubject === 'chem';
 };
 
 
@@ -496,58 +497,58 @@ export function useTopicListGeneration() {
  * Hook for generating the detailed content of a single topic.
  */
 export function useTopicContentGeneration() {
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [validationResults, setValidationResults] = useState<ValidationResult | null>(null);
-    const { session } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [validationResults, setValidationResults] = useState<ValidationResult | null>(null);
+  const { session } = useAuth();
 
-    const generateTopicContent = async (
-        subjectName: string,
-        topicName: string,
-        gradeLevel: string,
-        provider: LLMProvider,
-        model: string
-    ): Promise<Partial<Topic> | null> => {
-        try {
-            setLoading(true);
-            setError(null);
-            setValidationResults(null);
+  const generateTopicContent = async (
+    subjectName: string,
+    topicName: string,
+    gradeLevel: string,
+    provider: LLMProvider,
+    model: string
+  ): Promise<Partial<Topic> | null> => {
+    try {
+      setLoading(true);
+      setError(null);
+      setValidationResults(null);
 
-            if (!session || !session.access_token) {
-                throw new Error('Authentication required.');
-            }
+      if (!session || !session.access_token) {
+        throw new Error('Authentication required.');
+      }
 
-            // Use the shared content generation function
-            const result = await generateSingleTopicContent(
-                subjectName,
-                topicName,
-                gradeLevel,
-                provider,
-                model,
-                session.access_token
-            );
+      // Use the shared content generation function
+      const result = await generateSingleTopicContent(
+        subjectName,
+        topicName,
+        gradeLevel,
+        provider,
+        model,
+        session.access_token
+      );
 
-            if (result && result.content && isChemistryContent(subjectName)) {
-                console.log('Validating Chemistry topic content...');
-                const validation = validateChemistryContent(result.content);
-                setValidationResults(validation);
-                if (validation.warnings.length > 0 || validation.errors.length > 0) {
-                    console.warn('Chemistry content validation issues:', validation);
-                }
-            }
-
-            return result;
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Failed to generate topic content';
-            setError(errorMessage);
-            console.error(errorMessage, err);
-            return null;
-        } finally {
-            setLoading(false);
+      if (result && result.content && isChemistryContent(subjectName)) {
+        console.log('Validating Chemistry topic content...');
+        const validation = validateChemistryContent(result.content);
+        setValidationResults(validation);
+        if (validation.warnings.length > 0 || validation.errors.length > 0) {
+          console.warn('Chemistry content validation issues:', validation);
         }
-    };
+      }
 
-    return { generateTopicContent, loading, error, validationResults };
+      return result;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate topic content';
+      setError(errorMessage);
+      console.error(errorMessage, err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { generateTopicContent, loading, error, validationResults };
 }
 
 /**
@@ -576,7 +577,7 @@ export function useLLMFlashcardGeneration() {
         throw new Error('Authentication required. Please log in.');
       }
 
-      const prompt = `You are an expert in creating educational content for the IGCSE curriculum. Your task is to generate a set of ${count} high-quality flashcards for the topic \"${topicTitle}\" in the subject \"${subjectName}\". The target audience is IGCSE students, and the difficulty level should be ${difficulty}.
+      const prompt = `You are an expert in creating educational content for the IGCSE curriculum. Your task is to generate a set of ${count} high-quality flashcards for the topic "${topicTitle}" in the subject "${subjectName}". The target audience is IGCSE students, and the difficulty level should be ${difficulty}.
 
 Each flashcard must have a 'front_content' (a question, term, or concept) and a 'back_content' (a concise and accurate answer or explanation).
 
@@ -603,7 +604,7 @@ Return the output as a JSON array of objects. For example:
       if (!response) {
         throw new Error('LLM service returned no response.');
       }
-      
+
       const startIndex = response.indexOf('[');
       const endIndex = response.lastIndexOf(']');
       if (startIndex === -1 || endIndex === -1) {
@@ -651,7 +652,7 @@ export function useQuizGeneration() {
   const [validationResults, setValidationResults] = useState<ValidationResult | null>(null);
   const { session } = useAuth();
 
-    const generateQuiz = async (
+  const generateQuiz = async (
     topicTitle: string,
     topicContent: string,
     questionCount: number,
@@ -669,11 +670,11 @@ export function useQuizGeneration() {
       }
 
       const systemPrompt = `
-                You are an expert IGCSE quiz creator. Based on the topic \"${topicTitle}\" and its content, generate a quiz with ${questionCount} multiple-choice questions with a difficulty level of '${difficulty}'.
+        You are an expert IGCSE quiz creator. Based on the topic "${topicTitle}" and its content, generate a quiz with ${questionCount} multiple-choice questions with a difficulty level of '${difficulty}'.
         The quiz should assess understanding of the key concepts in the provided content.
         
         Return a single JSON object with these fields:
-        - title: A suitable title for the quiz (e.g., \"Quiz: ${topicTitle}\")
+        - title: A suitable title for the quiz (e.g., "Quiz: ${topicTitle}")
         - description: A brief description of what the quiz covers.
         - difficulty_level: A number from 1-5 representing the overall difficulty.
         - time_limit_minutes: An estimated time limit in minutes.

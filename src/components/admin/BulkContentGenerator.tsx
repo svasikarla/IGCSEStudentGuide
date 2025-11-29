@@ -7,6 +7,8 @@ interface BulkContentGeneratorProps {
   topics: Topic[];
   subjectName: string;
   gradeLevel: string;
+  initialProvider?: LLMProvider;
+  initialModel?: string;
   onContentGenerated?: (topicId: string, content: string) => void;
   onComplete?: () => void;
   className?: string;
@@ -24,6 +26,8 @@ const BulkContentGenerator: React.FC<BulkContentGeneratorProps> = ({
   topics,
   subjectName,
   gradeLevel,
+  initialProvider = LLMProvider.OPENAI,
+  initialModel = 'gpt-4o-mini',
   onContentGenerated,
   onComplete,
   className = ''
@@ -36,14 +40,14 @@ const BulkContentGenerator: React.FC<BulkContentGeneratorProps> = ({
     current: '',
     errors: []
   });
-  const [selectedProvider, setSelectedProvider] = useState<LLMProvider>(LLMProvider.OPENAI);
-  const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
+  const [selectedProvider, setSelectedProvider] = useState<LLMProvider>(initialProvider);
+  const [selectedModel, setSelectedModel] = useState(initialModel);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
   const { generateTopicContent } = useLLMGeneration();
 
   // Filter topics that need content
-  const topicsNeedingContent = topics.filter(topic => 
+  const topicsNeedingContent = topics.filter(topic =>
     !topic.content || topic.content.trim().length === 0
   );
 
@@ -64,7 +68,7 @@ const BulkContentGenerator: React.FC<BulkContentGeneratorProps> = ({
 
     for (let i = 0; i < topicsNeedingContent.length; i++) {
       const topic = topicsNeedingContent[i];
-      
+
       setProgress(prev => ({
         ...prev,
         current: topic.title
@@ -82,7 +86,7 @@ const BulkContentGenerator: React.FC<BulkContentGeneratorProps> = ({
         if (content && content.content) {
           // Update topic in database
           onContentGenerated?.(topic.id, content.content);
-          
+
           setProgress(prev => ({
             ...prev,
             completed: prev.completed + 1
@@ -118,6 +122,8 @@ const BulkContentGenerator: React.FC<BulkContentGeneratorProps> = ({
     switch (provider) {
       case LLMProvider.OPENAI:
         return ['gpt-4o-mini', 'gpt-4o', 'gpt-4-turbo'];
+      case LLMProvider.AZURE:
+        return ['gpt-4o', 'gpt-35-turbo'];
       case LLMProvider.GOOGLE:
         return ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.0-pro'];
       case LLMProvider.HUGGINGFACE:
@@ -199,6 +205,7 @@ const BulkContentGenerator: React.FC<BulkContentGeneratorProps> = ({
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   <option value={LLMProvider.OPENAI}>OpenAI</option>
+                  <option value={LLMProvider.AZURE}>Azure OpenAI</option>
                   <option value={LLMProvider.GOOGLE}>Google Gemini</option>
                   <option value={LLMProvider.HUGGINGFACE}>Hugging Face (Ultra Low Cost)</option>
                 </select>
@@ -297,8 +304,8 @@ const BulkContentGenerator: React.FC<BulkContentGeneratorProps> = ({
                 <span>{progress.completed + progress.failed} / {progress.total}</span>
               </div>
               <div className="w-full bg-neutral-200 rounded-full h-2">
-                <div 
-                  className="bg-primary-600 h-2 rounded-full transition-all duration-300" 
+                <div
+                  className="bg-primary-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${((progress.completed + progress.failed) / progress.total) * 100}%` }}
                 ></div>
               </div>

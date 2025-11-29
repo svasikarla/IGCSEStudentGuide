@@ -41,172 +41,159 @@ export interface ILLMAdapter {
 export class BaseLLMAdapter implements ILLMAdapter {
   protected apiBaseUrl: string;
   protected defaultProvider: LLMProvider;
-  
+
   constructor(
-    apiBaseUrl: string = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001/api',
+    apiBaseUrl: string = process.env.REACT_APP_API_BASE_URL || '/api',
     defaultProvider: LLMProvider = LLMProvider.OPENAI
   ) {
     this.apiBaseUrl = apiBaseUrl;
     this.defaultProvider = defaultProvider;
   }
-  
+
   async generateText(prompt: string, options: LLMOptions = {}): Promise<string> {
     try {
       const provider = options.provider || this.defaultProvider;
-      
+
       // Prepare headers with authentication if token is provided
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
       };
-      
+
       // Add Authorization header if auth token is provided
       if (options.authToken) {
         headers['Authorization'] = `Bearer ${options.authToken}`;
       }
-      
-      const response = await fetch(`${this.apiBaseUrl}/llm/generate`, {
+
+      const response = await fetch(`${this.apiBaseUrl}/content-generation/generate`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
           prompt,
           model: options.model,
           temperature: options.temperature,
-          max_tokens: options.maxTokens,
+          maxTokens: options.maxTokens, // Note: backend expects maxTokens
           provider: provider,
         }),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `Error calling ${provider} LLM API`);
+        throw new Error(errorData.message || errorData.error || `Error calling ${provider} LLM API`);
       }
-      
+
       const data = await response.json();
-      return data.text;
+      // The unified endpoint returns { content: "...", metadata: ... }
+      return data.content;
     } catch (error) {
       console.error('Error generating text with LLM:', error);
       throw new Error(`LLM API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
-  
+
   async generateJSON<T>(prompt: string, options: LLMOptions = {}): Promise<T> {
     try {
       const provider = options.provider || this.defaultProvider;
-      
+
       // Prepare headers with authentication if token is provided
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
       };
-      
+
       // Add Authorization header if auth token is provided
       if (options.authToken) {
         headers['Authorization'] = `Bearer ${options.authToken}`;
       } else {
         console.warn('No auth token provided for LLM API call. This may cause authentication errors.');
       }
-      
-      console.log(`Making request to ${this.apiBaseUrl}/llm/generate-json`);
-      console.log('Request payload:', {
-        prompt: `${prompt}\n\nProvide your response as a valid JSON object.`,
-        model: options.model,
-        temperature: options.temperature,
-        max_tokens: options.maxTokens,
-        provider: provider,
-        response_format: { type: 'json_object' }
-      });
 
-      const response = await fetch(`${this.apiBaseUrl}/llm/generate-json`, {
+      console.log(`Making request to ${this.apiBaseUrl}/content-generation/generate`);
+
+      // For JSON generation, we use the same generic endpoint but append instructions to the prompt
+      // The backend unified endpoint handles this better
+      const jsonPrompt = `${prompt}\n\nIMPORTANT: Provide your response as a valid JSON object. Do not include markdown formatting like \`\`\`json.`;
+
+      const response = await fetch(`${this.apiBaseUrl}/content-generation/generate`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          prompt: `${prompt}\n\nProvide your response as a valid JSON object.`,
+          prompt: jsonPrompt,
           model: options.model,
           temperature: options.temperature,
-          max_tokens: options.maxTokens,
+          maxTokens: options.maxTokens,
           provider: provider,
-          response_format: { type: 'json_object' }
+          // We can pass response_format if the backend supports it, but for now relying on prompt
         }),
       });
-      
-      // Log the raw response status and headers
+
+      // Log the raw response status
       console.log('Response status:', response.status);
-      
-      // Log headers in a way compatible with older TypeScript targets
-      const headerObj: Record<string, string> = {};
-      response.headers.forEach((value, key) => {
-        headerObj[key] = value;
-      });
-      console.log('Response headers:', headerObj);
-      
+
       const responseClone = response.clone();
       const rawText = await responseClone.text();
-      console.log('Raw response text:', rawText);
-      
-      // Handle different HTTP status codes with specific error messages
+
       if (!response.ok) {
+        // ... error handling logic (kept similar but simplified for brevity in this replacement)
         try {
           const errorData = JSON.parse(rawText);
-          console.error(`Server error response (${response.status}):`, errorData);
-          
-          // Handle specific status codes
-          switch (response.status) {
-            case 401:
-              throw new Error('Authentication failed. Please log in again.');
-            case 403:
-              throw new Error('You do not have permission to access this resource. Admin privileges required.');
-            case 400:
-              throw new Error(`Bad request: ${errorData.error || 'Invalid request parameters'}`);
-            default:
-              throw new Error(errorData.error || `Error calling ${provider} LLM JSON API: ${response.status}`);
-          }
-        } catch (parseError) {
-          // If we can't parse the error as JSON, just use the status text
-          console.error('Could not parse error response as JSON:', parseError);
-          throw new Error(`Error calling ${provider} LLM JSON API: ${response.status} ${response.statusText}`);
+          throw new Error(errorData.error || `Error: ${response.status}`);
+        } catch (e) {
+          throw new Error(`Error: ${response.status} ${response.statusText}`);
         }
       }
-      
-      // Try to parse the raw text as JSON
+
+      // Parse the response from the unified endpoint
       let result;
       try {
         result = JSON.parse(rawText);
-        console.log('API response parsed as JSON:', result);
-      } catch (parseError) {
-        console.error('Failed to parse response as JSON:', rawText);
+      } catch (e) {
         throw new Error('Server returned invalid JSON');
       }
-      
-      // Check for error field in the response
-      if (result.error) {
-        throw new Error(`API error: ${result.error}`);
-      }
-      
-      // For the /generate-json endpoint, the server returns the parsed JSON directly
-      // For other endpoints, we need to handle different response formats
-      if (result && typeof result === 'object' && !result.error) {
-        // The server already parsed the JSON and returned it directly
-        return result as T;
-      } else if (result.data) {
-        return result.data as T;
-      } else if (result.text) {
+
+      // The unified endpoint returns { content: "...", metadata: ... }
+      // We need to parse the 'content' field as JSON
+      if (result.content) {
         try {
-          return JSON.parse(result.text) as T;
-        } catch (parseError) {
-          console.error('Failed to parse text as JSON:', result.text);
-          throw new Error('Failed to parse LLM response as JSON');
-        }
-      } else if (result.choices && result.choices.length > 0 && result.choices[0].message?.content) {
-        // Handle OpenAI direct API response format
-        try {
-          return JSON.parse(result.choices[0].message.content) as T;
-        } catch (parseError) {
-          console.error('Failed to parse content as JSON:', result.choices[0].message.content);
-          throw new Error('Failed to parse LLM response as JSON');
+          // Clean up potential markdown code blocks if the LLM ignored instructions
+          let cleanContent = result.content.trim();
+
+          // Remove markdown code blocks
+          if (cleanContent.includes('```json')) {
+            cleanContent = cleanContent.replace(/```json\s*([\s\S]*?)\s*```/, '$1');
+          } else if (cleanContent.includes('```')) {
+            cleanContent = cleanContent.replace(/```\s*([\s\S]*?)\s*```/, '$1');
+          }
+
+          // Find the first '{' or '[' and the last '}' or ']'
+          const firstBrace = cleanContent.indexOf('{');
+          const firstBracket = cleanContent.indexOf('[');
+          const firstChar = (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) ? firstBrace : firstBracket;
+
+          const lastBrace = cleanContent.lastIndexOf('}');
+          const lastBracket = cleanContent.lastIndexOf(']');
+          const lastChar = (lastBrace !== -1 && (lastBracket === -1 || lastBrace > lastBracket)) ? lastBrace : lastBracket;
+
+          if (firstChar !== -1 && lastChar !== -1) {
+            cleanContent = cleanContent.substring(firstChar, lastChar + 1);
+          }
+
+          return JSON.parse(cleanContent) as T;
+        } catch (e) {
+          console.error('Failed to parse inner content as JSON:', result.content);
+          // Try to fix common JSON errors if simple parse fails
+          try {
+            // Simple fix for unquoted property names or single quotes (basic attempt)
+            const fixedContent = result.content
+              .replace(/(\w+):/g, '"$1":')
+              .replace(/'/g, '"');
+            return JSON.parse(fixedContent) as T;
+          } catch (retryError) {
+            throw new Error('LLM response was not valid JSON');
+          }
         }
       } else {
-        console.error('Unexpected API response structure:', result);
-        throw new Error('API response has an unexpected structure');
+        throw new Error('Unexpected response format from content generation API');
       }
+
     } catch (error) {
       console.error('Error generating JSON from LLM:', error);
       throw new Error(`JSON generation error: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -220,44 +207,19 @@ export class BaseLLMAdapter implements ILLMAdapter {
     tier?: string,
     options: LLMOptions = {}
   ): Promise<any> {
-    try {
-      const provider = options.provider || this.defaultProvider;
+    // For curriculum, we'll use the generic generate endpoint with a specific prompt
+    // since there isn't a dedicated curriculum endpoint in the new unified router yet
+    // (The wizard uses useTopicListGeneration hook which calls generateJSON directly or via this adapter)
 
-      // Prepare headers with authentication if token is provided
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      };
+    const prompt = `Generate a comprehensive curriculum structure for:
+      Subject: ${subjectName}
+      Grade: ${gradeLevel}
+      Board: ${curriculumBoard}
+      ${tier ? `Tier: ${tier}` : ''}
+      
+      Return a JSON array of chapters, where each chapter has a title, description, and list of topics.`;
 
-      // Add Authorization header if auth token is provided
-      if (options.authToken) {
-        headers['Authorization'] = `Bearer ${options.authToken}`;
-      }
-
-      const response = await fetch(`${this.apiBaseUrl}/llm/generate-curriculum`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          subjectName,
-          gradeLevel,
-          curriculumBoard,
-          tier,
-          model: options.model,
-          temperature: options.temperature,
-          provider: provider,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`HTTP ${response.status}: ${errorData.error || response.statusText}`);
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Error generating curriculum:', error);
-      throw new Error(`Curriculum generation error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    return this.generateJSON(prompt, options);
   }
 }
 

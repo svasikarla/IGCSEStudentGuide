@@ -1,4 +1,20 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+
+// Alias React environment variables for backend use
+if (!process.env.SUPABASE_URL && process.env.REACT_APP_SUPABASE_URL) {
+  process.env.SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
+}
+if (!process.env.SUPABASE_ANON_KEY && process.env.REACT_APP_SUPABASE_ANON_KEY) {
+  process.env.SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY;
+}
+if (!process.env.SUPABASE_SERVICE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  process.env.SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+}
+if (!process.env.SUPABASE_SERVICE_KEY && process.env.SUPABASE_ANON_KEY) {
+  console.warn('⚠️ SUPABASE_SERVICE_KEY not found, falling back to SUPABASE_ANON_KEY. Admin operations may fail.');
+  process.env.SUPABASE_SERVICE_KEY = process.env.SUPABASE_ANON_KEY;
+}
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
@@ -29,6 +45,19 @@ app.use(limiter);
 // Health check endpoint (public)
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is running' });
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.status(200).json({
+    message: 'IGCSE Student Guide API Server',
+    status: 'running',
+    endpoints: {
+      health: '/api/health',
+      contentGeneration: '/api/content-generation',
+      subjects: '/api/subjects'
+    }
+  });
 });
 
 // Use the unified content generation routes (replaces llm.js and simplified-generation.js)

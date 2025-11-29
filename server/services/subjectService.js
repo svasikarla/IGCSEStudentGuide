@@ -1,10 +1,4 @@
-const { createClient } = require('@supabase/supabase-js');
-
-// Initialize Supabase client with service role for admin operations
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const { supabase } = require('../middleware/auth');
 
 /**
  * Create a subject with complete hierarchy (chapters and topics) in a single transaction

@@ -36,12 +36,12 @@ const LLMProviderSelector: React.FC<LLMProviderSelectorProps> = ({
     const fetchProviders = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:3001/api/llm/providers');
-        
+        const response = await fetch('/api/content-generation/providers');
+
         if (!response.ok) {
           throw new Error('Failed to fetch providers');
         }
-        
+
         const providersData = await response.json();
         setProviders(providersData);
         setError(null);
@@ -55,6 +55,12 @@ const LLMProviderSelector: React.FC<LLMProviderSelectorProps> = ({
             name: 'OpenAI',
             available: true,
             models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo']
+          },
+          {
+            id: 'azure',
+            name: 'Azure OpenAI',
+            available: true, // Assuming available if configured in backend, or let user try
+            models: ['gpt-4o', 'gpt-35-turbo']
           },
           {
             id: 'google',
@@ -87,7 +93,7 @@ const LLMProviderSelector: React.FC<LLMProviderSelectorProps> = ({
   const handleProviderChange = (providerId: string) => {
     const provider = providerId as LLMProvider;
     onProviderChange(provider);
-    
+
     // Auto-select the first available model for the new provider
     const providerInfo = providers.find(p => p.id === providerId);
     if (providerInfo && providerInfo.models.length > 0) {
@@ -117,7 +123,7 @@ const LLMProviderSelector: React.FC<LLMProviderSelectorProps> = ({
           {error} - Using fallback configuration
         </div>
       )}
-      
+
       {/* Provider Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -130,8 +136,8 @@ const LLMProviderSelector: React.FC<LLMProviderSelectorProps> = ({
           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
         >
           {providers.map((provider) => (
-            <option 
-              key={provider.id} 
+            <option
+              key={provider.id}
               value={provider.id}
               disabled={!provider.available}
             >
@@ -190,6 +196,9 @@ const LLMProviderSelector: React.FC<LLMProviderSelectorProps> = ({
       <div className="text-xs text-gray-500">
         {selectedProvider === LLMProvider.OPENAI && (
           <p>✅ OpenAI models are optimized for educational content generation.</p>
+        )}
+        {selectedProvider === LLMProvider.AZURE && (
+          <p>✅ Azure OpenAI offers enterprise-grade reliability and compliance.</p>
         )}
         {selectedProvider === LLMProvider.GOOGLE && providers.find(p => p.id === 'google')?.available && (
           <p>✅ Google Gemini models offer fast and efficient text generation.</p>

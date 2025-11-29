@@ -15,11 +15,13 @@ import ChapterList from '../components/admin/ChapterList';
 import ChapterForm from '../components/admin/ChapterForm';
 import { Chapter } from '../types/chapter';
 
+import ContentGenerationWizard from '../components/admin/ContentGenerationWizard';
+
 /**
  * Admin page for content generation using LLM
  */
 const AdminPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'subjects' | 'chapters' | 'topics' | 'flashcards' | 'quizzes' | 'exam-papers' | 'scraping' | 'test-llm' | 'question-stats'>('subjects');
+  const [activeTab, setActiveTab] = useState<'wizard' | 'subjects' | 'chapters' | 'topics' | 'flashcards' | 'quizzes' | 'exam-papers' | 'scraping' | 'test-llm' | 'question-stats'>('wizard');
   const { subjects } = useSubjects();
   const navigate = useNavigate();
 
@@ -34,7 +36,7 @@ const AdminPage: React.FC = () => {
   const [showChapterForm, setShowChapterForm] = useState(false);
 
   // Handle tab change
-  const handleTabChange = (tab: 'subjects' | 'chapters' | 'topics' | 'flashcards' | 'quizzes' | 'exam-papers' | 'scraping' | 'test-llm' | 'question-stats') => {
+  const handleTabChange = (tab: 'wizard' | 'subjects' | 'chapters' | 'topics' | 'flashcards' | 'quizzes' | 'exam-papers' | 'scraping' | 'test-llm' | 'question-stats') => {
     setActiveTab(tab);
   };
 
@@ -69,241 +71,245 @@ const AdminPage: React.FC = () => {
         {/* Tabs */}
         <div className="flex border-b border-gray-200 mb-6 overflow-x-auto scrollbar-hide">
           <button
-            className={`px-4 lg:px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${
-              activeTab === 'subjects'
+            className={`px-4 lg:px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'wizard'
                 ? 'border-b-2 border-blue-500 text-blue-600'
                 : 'text-gray-500 hover:text-gray-700'
-            }`}
+              }`}
+            onClick={() => handleTabChange('wizard')}
+          >
+            ✨ Content Wizard
+          </button>
+          <button
+            className={`px-4 lg:px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'subjects'
+                ? 'border-b-2 border-blue-500 text-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+              }`}
             onClick={() => handleTabChange('subjects')}
           >
             Subjects
           </button>
           <button
-            className={`px-4 lg:px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${
-              activeTab === 'chapters'
+            className={`px-4 lg:px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'chapters'
                 ? 'border-b-2 border-blue-500 text-blue-600'
                 : 'text-gray-500 hover:text-gray-700'
-            }`}
+              }`}
             onClick={() => handleTabChange('chapters')}
           >
             Chapters
           </button>
           <button
-            className={`px-4 lg:px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${
-              activeTab === 'topics'
+            className={`px-4 lg:px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'topics'
                 ? 'border-b-2 border-blue-500 text-blue-600'
                 : 'text-gray-500 hover:text-gray-700'
-            }`}
+              }`}
             onClick={() => handleTabChange('topics')}
           >
             Topics
           </button>
           <button
-            className={`px-4 lg:px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${
-              activeTab === 'flashcards'
+            className={`px-4 lg:px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'flashcards'
                 ? 'border-b-2 border-blue-500 text-blue-600'
                 : 'text-gray-500 hover:text-gray-700'
-            }`}
+              }`}
             onClick={() => handleTabChange('flashcards')}
           >
             Flashcards
           </button>
           <button
-            className={`px-4 lg:px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${
-              activeTab === 'quizzes'
+            className={`px-4 lg:px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'quizzes'
                 ? 'border-b-2 border-blue-500 text-blue-600'
                 : 'text-gray-500 hover:text-gray-700'
-            }`}
+              }`}
             onClick={() => handleTabChange('quizzes')}
           >
             Quizzes
           </button>
           <button
-            className={`px-4 lg:px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${
-              activeTab === 'exam-papers'
+            className={`px-4 lg:px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'exam-papers'
                 ? 'border-b-2 border-blue-500 text-blue-600'
                 : 'text-gray-500 hover:text-gray-700'
-            }`}
+              }`}
             onClick={() => handleTabChange('exam-papers')}
           >
             Exam Papers
           </button>
           <button
-            className={`px-4 lg:px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${
-              activeTab === 'scraping'
+            className={`px-4 lg:px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'scraping'
                 ? 'border-b-2 border-blue-500 text-blue-600'
                 : 'text-gray-500 hover:text-gray-700'
-            }`}
+              }`}
             onClick={() => handleTabChange('scraping')}
           >
             Content Scraping
           </button>
           <button
-            className={`px-4 lg:px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${
-              activeTab === 'question-stats'
+            className={`px-4 lg:px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'question-stats'
                 ? 'border-b-2 border-blue-500 text-blue-600'
                 : 'text-gray-500 hover:text-gray-700'
-            }`}
+              }`}
             onClick={() => handleTabChange('question-stats')}
           >
             Question Statistics
           </button>
           <button
-            className={`px-4 lg:px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${
-              activeTab === 'test-llm'
+            className={`px-4 lg:px-6 py-3 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'test-llm'
                 ? 'border-b-2 border-blue-500 text-blue-600'
                 : 'text-gray-500 hover:text-gray-700'
-            }`}
+              }`}
             onClick={() => handleTabChange('test-llm')}
           >
             Test LLM Providers
           </button>
         </div>
 
-      {/* Tab Content */}
-      <div className={activeTab === 'subjects' ? '' : 'bg-white rounded-lg shadow-md p-6'}>
-        {activeTab === 'subjects' && (
-          <SubjectManagement />
-        )}
+        {/* Tab Content */}
+        <div className={activeTab === 'subjects' ? '' : 'bg-white rounded-lg shadow-md p-6'}>
+          {activeTab === 'wizard' && (
+            <ContentGenerationWizard />
+          )}
 
-        {activeTab === 'chapters' && (
-          <div className="bg-white rounded-lg shadow-md">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-xl font-semibold text-neutral-900">Chapter Management</h2>
-                  <p className="text-neutral-600 mt-1">Organize topics into chapters for better content structure</p>
-                </div>
-                {selectedSubjectId && (
-                  <button
-                    onClick={() => {
-                      setEditingChapter(null);
-                      setShowChapterForm(true);
-                    }}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                  >
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    New Chapter
-                  </button>
-                )}
-              </div>
+          {activeTab === 'subjects' && (
+            <SubjectManagement />
+          )}
 
-              {/* Subject Selection */}
-              <div className="mb-6">
-                <label htmlFor="subject-select" className="block text-sm font-medium text-neutral-700 mb-2">
-                  Select Subject
-                </label>
-                <select
-                  id="subject-select"
-                  value={selectedSubjectId || ''}
-                  onChange={(e) => {
-                    setSelectedSubjectId(e.target.value || null);
-                    setSelectedChapter(null);
-                    setShowChapterForm(false);
-                  }}
-                  className="w-full max-w-md px-3 py-2 border border-neutral-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                >
-                  <option value="">Choose a subject...</option>
-                  {subjects.map((subject) => (
-                    <option key={subject.id} value={subject.id}>
-                      {subject.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Chapter Management Interface */}
-              {selectedSubjectId && (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                  {/* Chapter List */}
-                  <div className={`${showChapterForm ? 'lg:col-span-5' : 'lg:col-span-12'}`}>
-                    <ChapterList
-                      subjectId={selectedSubjectId}
-                      onChapterSelect={setSelectedChapter}
-                      onChapterEdit={(chapter) => {
-                        setEditingChapter(chapter);
+          {activeTab === 'chapters' && (
+            <div className="bg-white rounded-lg shadow-md">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-xl font-semibold text-neutral-900">Chapter Management</h2>
+                    <p className="text-neutral-600 mt-1">Organize topics into chapters for better content structure</p>
+                  </div>
+                  {selectedSubjectId && (
+                    <button
+                      onClick={() => {
+                        setEditingChapter(null);
                         setShowChapterForm(true);
                       }}
-                      onChapterDelete={(chapterId) => {
-                        if (selectedChapter?.id === chapterId) {
-                          setSelectedChapter(null);
-                        }
-                      }}
-                      selectedChapter={selectedChapter}
-                    />
-                  </div>
-
-                  {/* Chapter Form */}
-                  {showChapterForm && (
-                    <div className="lg:col-span-7">
-                      <ChapterForm
-                        subjectId={selectedSubjectId}
-                        chapter={editingChapter}
-                        onSave={(savedChapter) => {
-                          setSelectedChapter(savedChapter);
-                          setShowChapterForm(false);
-                          setEditingChapter(null);
-                        }}
-                        onCancel={() => {
-                          setShowChapterForm(false);
-                          setEditingChapter(null);
-                        }}
-                      />
-                    </div>
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                    >
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      New Chapter
+                    </button>
                   )}
                 </div>
-              )}
+
+                {/* Subject Selection */}
+                <div className="mb-6">
+                  <label htmlFor="subject-select" className="block text-sm font-medium text-neutral-700 mb-2">
+                    Select Subject
+                  </label>
+                  <select
+                    id="subject-select"
+                    value={selectedSubjectId || ''}
+                    onChange={(e) => {
+                      setSelectedSubjectId(e.target.value || null);
+                      setSelectedChapter(null);
+                      setShowChapterForm(false);
+                    }}
+                    className="w-full max-w-md px-3 py-2 border border-neutral-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  >
+                    <option value="">Choose a subject...</option>
+                    {subjects.map((subject) => (
+                      <option key={subject.id} value={subject.id}>
+                        {subject.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Chapter Management Interface */}
+                {selectedSubjectId && (
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    {/* Chapter List */}
+                    <div className={`${showChapterForm ? 'lg:col-span-5' : 'lg:col-span-12'}`}>
+                      <ChapterList
+                        subjectId={selectedSubjectId}
+                        onChapterSelect={setSelectedChapter}
+                        onChapterEdit={(chapter) => {
+                          setEditingChapter(chapter);
+                          setShowChapterForm(true);
+                        }}
+                        onChapterDelete={(chapterId) => {
+                          if (selectedChapter?.id === chapterId) {
+                            setSelectedChapter(null);
+                          }
+                        }}
+                        selectedChapter={selectedChapter}
+                      />
+                    </div>
+
+                    {/* Chapter Form */}
+                    {showChapterForm && (
+                      <div className="lg:col-span-7">
+                        <ChapterForm
+                          subjectId={selectedSubjectId}
+                          chapter={editingChapter}
+                          onSave={(savedChapter) => {
+                            setSelectedChapter(savedChapter);
+                            setShowChapterForm(false);
+                            setEditingChapter(null);
+                          }}
+                          onCancel={() => {
+                            setShowChapterForm(false);
+                            setEditingChapter(null);
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {activeTab === 'topics' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <TopicGeneratorForm
-              subjects={subjects}
-              onSubjectChange={setSelectedSubjectId}
-            />
-          </div>
-        )}
+          {activeTab === 'topics' && (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <TopicGeneratorForm
+                subjects={subjects}
+                onSubjectChange={setSelectedSubjectId}
+              />
+            </div>
+          )}
 
-        {activeTab === 'flashcards' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <FlashcardGeneratorForm />
-          </div>
-        )}
+          {activeTab === 'flashcards' && (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <FlashcardGeneratorForm />
+            </div>
+          )}
 
-        {activeTab === 'quizzes' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <QuizGeneratorForm
-              subjects={subjects}
-              topics={topics}
-              chapters={chapters}
-              onSubjectChange={setSelectedSubjectId}
-            />
-          </div>
-        )}
+          {activeTab === 'quizzes' && (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <QuizGeneratorForm
+                subjects={subjects}
+                topics={topics}
+                chapters={chapters}
+                onSubjectChange={setSelectedSubjectId}
+              />
+            </div>
+          )}
 
-        {activeTab === 'exam-papers' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <ExamPaperGeneratorForm />
-          </div>
-        )}
+          {activeTab === 'exam-papers' && (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <ExamPaperGeneratorForm />
+            </div>
+          )}
 
-        {activeTab === 'scraping' && (
-          <ContentScrapingInterface />
-        )}
+          {activeTab === 'scraping' && (
+            <ContentScrapingInterface />
+          )}
 
-        {activeTab === 'question-stats' && (
-          <QuestionStatsDashboard />
-        )}
+          {activeTab === 'question-stats' && (
+            <QuestionStatsDashboard />
+          )}
 
-        {activeTab === 'test-llm' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <LLMProviderTester />
-          </div>
-        )}
+          {activeTab === 'test-llm' && (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <LLMProviderTester />
+            </div>
+          )}
         </div>
       </div>
     </div>

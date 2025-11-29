@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
 export interface Topic {
@@ -46,7 +46,7 @@ export function useTopics(subjectId: string | null, chapterId?: string | null) {
   const [saveError, setSaveError] = useState<string | null>(null);
 
   // Extract fetchTopics to hook level so it can be reused
-  const fetchTopics = async () => {
+  const fetchTopics = useCallback(async () => {
     if (!subjectId) {
       setTopics([]);
       return;
@@ -79,7 +79,7 @@ export function useTopics(subjectId: string | null, chapterId?: string | null) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [subjectId, chapterId]);
 
   useEffect(() => {
     // Don't fetch if no subjectId is provided
@@ -101,7 +101,7 @@ export function useTopics(subjectId: string | null, chapterId?: string | null) {
     return () => {
       document.removeEventListener('topicsChanged', handleTopicsChanged);
     };
-  }, [subjectId, chapterId]); // Added chapterId dependency
+  }, [subjectId, chapterId, fetchTopics]);
 
   /**
    * Generate a unique slug for a topic within a subject

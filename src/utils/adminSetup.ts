@@ -11,22 +11,22 @@ import { supabase } from '../lib/supabase';
 export async function checkAuthStatus() {
   try {
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
+
     if (sessionError) {
       console.error('Session error:', sessionError);
       return { error: sessionError.message };
     }
 
     if (!session) {
-      return { 
-        authenticated: false, 
-        message: 'No active session' 
+      return {
+        authenticated: false,
+        message: 'No active session'
       };
     }
 
     const user = session.user;
     const isAdmin = user.app_metadata?.role === 'admin';
-    
+
     console.log('🔍 Authentication Status:', {
       authenticated: true,
       userId: user.id,
@@ -56,15 +56,15 @@ export async function checkAuthStatus() {
 export async function testApiConnectivity() {
   try {
     console.log('🧪 Testing API connectivity...');
-    
+
     // Test health endpoint
-    const healthResponse = await fetch('http://localhost:3001/api/health');
+    const healthResponse = await fetch('/api/health');
     const healthData = await healthResponse.json();
     console.log('✅ Health check:', healthData);
 
     // Get current session
     const { data: { session } } = await supabase.auth.getSession();
-    
+
     if (!session?.access_token) {
       return {
         health: healthData,
@@ -75,7 +75,7 @@ export async function testApiConnectivity() {
 
     // Test LLM API
     console.log('🧪 Testing LLM API with authentication...');
-    const llmResponse = await fetch('http://localhost:3001/api/llm/generate-json', {
+    const llmResponse = await fetch('/api/content-generation/generate', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -83,13 +83,13 @@ export async function testApiConnectivity() {
       },
       body: JSON.stringify({
         prompt: 'Generate a simple test JSON object with a "message" field containing "Hello, World!"',
-        max_tokens: 100
+        maxTokens: 100 // Note: endpoint expects maxTokens, not max_tokens
       })
     });
 
     const llmStatus = llmResponse.status;
     const llmData = await llmResponse.text();
-    
+
     console.log('LLM API Response Status:', llmStatus);
     console.log('LLM API Response:', llmData);
 

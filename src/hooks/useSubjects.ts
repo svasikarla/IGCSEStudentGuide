@@ -23,16 +23,16 @@ export function useSubjects() {
       try {
         setLoading(true);
         setError(null);
-        
+
         const { data, error } = await supabase
           .from('subjects')
           .select('*')
           .order('display_order', { ascending: true });
-        
+
         if (error) {
           throw new Error(error.message);
         }
-        
+
         setSubjects(data || []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An unknown error occurred');
@@ -45,5 +45,27 @@ export function useSubjects() {
     fetchSubjects();
   }, []);
 
-  return { subjects, loading, error };
+  const createSubject = async (subjectData: Partial<Subject>) => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('subjects')
+        .insert([subjectData])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setSubjects(prev => [...prev, data]);
+      return data;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create subject');
+      console.error('Error creating subject:', err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { subjects, loading, error, createSubject };
 }

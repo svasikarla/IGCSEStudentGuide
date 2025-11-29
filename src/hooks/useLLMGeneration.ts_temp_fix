@@ -1,0 +1,65 @@
+/**
+ * Shared function to generate content for a single topic
+ * Used by both useTopicListGeneration and useTopicContentGeneration
+ */
+const generateSingleTopicContent = async (
+  subjectName: string,
+  topicName: string,
+  gradeLevel: string,
+  provider: LLMProvider,
+  model: string,
+  authToken: string
+): Promise<Partial<Topic> | null> => {
+  try {
+    let instruction = `For the subject "${subjectName}", generate a comprehensive topic breakdown for the topic "${topicName}".`;
+    if (gradeLevel && gradeLevel.trim() !== '') {
+      instruction += ` This content should be tailored for IGCSE grade levels ${gradeLevel}.`;
+    }
+    if (isChemContent(subjectName)) {
+      instruction += ` The subject is chemistry, so ensure all chemical formulas, equations, and terminology are accurate and correctly formatted.`;
+    }
+
+    instruction += ` Provide detailed, educational content that helps students understand and master this topic.`;
+
+    const systemPrompt = `
+      ${instruction}
+      Return a single JSON object with these fields:
+      - title: The title of the topic (use "${topicName}" or improve it)
+      - description: A brief description of the topic (1-2 sentences)
+      - content: Detailed educational content for this topic (at least 500 words, with markdown formatting, including headings, lists, and bold text for key terms).
+      - difficulty_level: A number from 1-5 representing difficulty (1=easiest, 5=hardest)
+      - estimated_study_time_minutes: Estimated time to study this topic in minutes (e.g., 45)
+      - learning_objectives: An array of 3-5 learning objectives for this topic
+    `;
+
+    const result = await llmService.generateJSON<Partial<Topic>>(systemPrompt, {
+      authToken,
+      provider,
+      model,
+      maxTokens: 4000,
+    });
+
+    if (result && result.content && isChemContent(subjectName)) {
+      console.log('Validating Chemistry topic content...');
+      const validation = validateChemistryContent(result.content);
+      if (validation.warnings.length > 0 || validation.errors.length > 0) {
+        console.warn('Chemistry content validation issues:', validation);
+      }
+    }
+
+    return result;
+  } catch (err) {
+    console.error(`Failed to generate content for topic "${topicName}":`, err);
+    return null;
+  }
+};
+
+// --- Interfaces ---
+
+export interface GeneratedSubject {
+  name: string;
+  code: string;
+  description: string;
+  color_hex: string;
+  icon_name: string;
+}

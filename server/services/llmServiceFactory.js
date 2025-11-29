@@ -61,6 +61,27 @@ try {
   console.error('❌ OpenAI initialization failed:', error.message);
 }
 
+// Initialize Azure OpenAI
+let azureClient = null;
+try {
+  if (process.env.AZURE_OPENAI_API_KEY && process.env.AZURE_OPENAI_ENDPOINT) {
+    const { AzureOpenAI } = require('openai');
+    azureClient = new AzureOpenAI({
+      apiKey: process.env.AZURE_OPENAI_API_KEY,
+      endpoint: process.env.AZURE_OPENAI_ENDPOINT,
+      apiVersion: process.env.AZURE_OPENAI_API_VERSION || '2024-05-01-preview',
+      deployment: process.env.AZURE_OPENAI_DEPLOYMENT_NAME,
+    });
+    console.log('✅ Azure OpenAI service initialized successfully');
+  } else {
+    serviceErrors.push('Azure OpenAI: API key or Endpoint not configured');
+    console.warn('⚠️  Azure OpenAI service not configured');
+  }
+} catch (error) {
+  serviceErrors.push(`Azure OpenAI: ${error.message}`);
+  console.error('❌ Azure OpenAI initialization failed:', error.message);
+}
+
 // Cost-optimized model selection by tier
 const MODEL_SELECTION = {
   ultra_minimal: { provider: 'huggingface', model: 'meta-llama/Llama-3.1-8B-Instruct' },  // ~$0.0001/1M tokens
@@ -72,7 +93,7 @@ const MODEL_SELECTION = {
 /**
  * Get the appropriate LLM service based on provider or cost tier
  * @param {Object} options - Selection options
- * @param {string} options.provider - Specific provider (openai, google, huggingface)
+ * @param {string} options.provider - Specific provider (openai, google, huggingface, azure)
  * @param {string} options.costTier - Cost tier (ultra_minimal, minimal, standard, premium)
  * @param {string} options.model - Specific model to use
  * @returns {Object} Service object with methods and metadata
@@ -92,7 +113,7 @@ function getLLMService(options = {}) {
 
 /**
  * Get service by specific provider name with fallback
- * @param {string} providerName - Provider name (openai, google, huggingface)
+ * @param {string} providerName - Provider name (openai, google, huggingface, azure)
  * @param {string} modelOverride - Optional model override
  * @returns {Object} Service object
  */
@@ -122,6 +143,13 @@ function getServiceByProvider(providerName, modelOverride) {
         return createOpenAIWrapper(modelOverride);
       }
       console.warn(`⚠️  OpenAI requested but not available, attempting fallback...`);
+      break;
+
+    case 'azure':
+      if (azureClient) {
+        return createAzureWrapper(modelOverride);
+      }
+      console.warn(`⚠️  Azure OpenAI requested but not available, attempting fallback...`);
       break;
 
     default:
@@ -159,10 +187,20 @@ function getServiceByProvider(providerName, modelOverride) {
     };
   }
 
+  if (azureClient) {
+    console.log(`🔄 Falling back to Azure OpenAI`);
+    return {
+      ...createAzureWrapper(modelOverride),
+      fallbackUsed: true,
+      originalProvider: provider,
+      actualProvider: 'azure'
+    };
+  }
+
   // No services available
   throw new Error(
     `No LLM services available. Issues: ${serviceErrors.join(', ')}. ` +
-    `Please configure at least one API key (GOOGLE_API_KEY, OPENAI_API_KEY, or HF_TOKEN).`
+    `Please configure at least one API key (GOOGLE_API_KEY, OPENAI_API_KEY, AZURE_OPENAI_API_KEY, or HF_TOKEN).`
   );
 }
 
@@ -239,6 +277,58 @@ IMPORTANT: You must respond with a valid, parseable JSON object only.
 }
 
 /**
+ * Create Azure OpenAI service wrapper
+ * @param {string} modelOverride - Optional model override
+ * @returns {Object} Unified service interface
+ */
+function createAzureWrapper(modelOverride) {
+  // Azure usually has one deployment per model, so model selection might map to deployments
+  const availableModels = ['gpt-4o', 'gpt-35-turbo'];
+  const defaultModel = process.env.AZURE_OPENAI_DEPLOYMENT_NAME || 'gpt-4o';
+
+  return {
+    provider: 'azure',
+    model: modelOverride || defaultModel,
+    availableModels,
+    generateText: async (prompt, options = {}) => {
+      // For Azure, 'model' often refers to the deployment name
+      const deploymentName = modelOverride || options.model || defaultModel;
+
+      const response = await azureClient.chat.completions.create({
+        model: deploymentName,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: options.temperature || 0.7,
+        max_tokens: options.maxTokens || 1000,
+      });
+      return response.choices[0].message.content;
+    },
+    generateJSON: async (prompt, options = {}) => {
+      const deploymentName = modelOverride || options.model || defaultModel;
+
+      const jsonPrompt = `${prompt}
+
+IMPORTANT: You must respond with a valid, parseable JSON object only.
+- No markdown formatting, backticks, or code blocks
+- No explanatory text before or after the JSON
+- Ensure all property names and string values are in double quotes
+- No trailing commas
+- Follow proper JSON syntax`;
+
+      const response = await azureClient.chat.completions.create({
+        model: deploymentName,
+        messages: [{ role: 'user', content: jsonPrompt }],
+        temperature: options.temperature || 0.7,
+        max_tokens: options.maxTokens || 1000,
+        response_format: { type: 'json_object' },
+      });
+
+      const jsonText = response.choices[0].message.content.trim();
+      return JSON.parse(jsonText);
+    }
+  };
+}
+
+/**
  * Get list of available providers
  * @returns {Array} Array of provider info objects
  */
@@ -249,6 +339,14 @@ function getAvailableProviders() {
       name: 'OpenAI',
       available: !!openaiClient,
       models: openaiClient ? ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo'] : [],
+      costTier: 'standard'
+    },
+    {
+      id: 'azure',
+      name: 'Azure OpenAI',
+      available: !!azureClient,
+      models: azureClient ? ['gpt-4o', 'gpt-35-turbo'] : [],
+      setupUrl: 'https://portal.azure.com',
       costTier: 'standard'
     },
     {
@@ -290,10 +388,14 @@ function getServiceHealth() {
       openai: {
         available: !!openaiClient,
         configured: !!(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'your_openai_api_key_here')
+      },
+      azure: {
+        available: !!azureClient,
+        configured: !!(process.env.AZURE_OPENAI_API_KEY && process.env.AZURE_OPENAI_ENDPOINT)
       }
     },
     errors: serviceErrors,
-    status: (geminiService || huggingFaceService || openaiClient) ? 'healthy' : 'critical'
+    status: (geminiService || huggingFaceService || openaiClient || azureClient) ? 'healthy' : 'critical'
   };
 }
 

@@ -82,5 +82,6 @@
     "supabase"
   ],
   "author": "IGCSE Student Guide Team",
-  "license": "MIT"
+  "license": "MIT",
+  "proxy": "http://localhost:3001"
 }
