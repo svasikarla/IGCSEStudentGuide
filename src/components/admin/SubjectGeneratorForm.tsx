@@ -86,81 +86,89 @@ const SubjectGeneratorForm: React.FC<SubjectGeneratorFormProps> = ({ onGeneratio
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Generate New Subject</h2>
-        <p className="text-gray-600">Use AI to create a new IGCSE subject with comprehensive details</p>
+      {/* Header - Using design system pattern */}
+      <div className="border-b border-neutral-200 pb-4">
+        <h2 className="text-2xl font-bold text-neutral-900 mb-1">Generate New Subject</h2>
+        <p className="text-neutral-600">Use AI to create a new IGCSE subject with comprehensive details</p>
       </div>
 
-      {/* Success message */}
+      {/* Success message - Using design system pattern */}
       {showSuccess && savedSubject && (
-        <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-lg">
-          <div className="flex items-center">
-            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-            <span className="font-medium">Subject "{savedSubject.name}" created successfully!</span>
+        <div className="bg-success-50 border border-success-200 text-success-800 p-4 rounded-xl flex items-start gap-3">
+          <svg className="w-5 h-5 text-success-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+          <div>
+            <p className="font-semibold">Success!</p>
+            <p className="text-sm mt-1">Subject "{savedSubject.name}" created successfully.</p>
           </div>
         </div>
       )}
 
-      {/* Error message */}
+      {/* Error message - Using design system pattern */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg">
-          <div className="flex items-center">
-            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
-            <span>{error}</span>
+        <div className="bg-error-50 border border-error-200 text-error-800 p-4 rounded-xl flex items-start gap-3">
+          <svg className="w-5 h-5 text-error-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
+          <div>
+            <p className="font-semibold">Error</p>
+            <p className="text-sm mt-1">{error}</p>
           </div>
         </div>
       )}
 
       {/* Validation warnings */}
       {validationResults && (validationResults.warnings.length > 0 || validationResults.errors.length > 0) && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-lg">
-          <h4 className="font-medium mb-2">Content Validation</h4>
-          {validationResults.errors.length > 0 && (
-            <div className="mb-2">
-              <p className="font-medium text-red-800">Errors:</p>
-              <ul className="list-disc list-inside text-sm">
-                {validationResults.errors.map((error, index) => (
-                  <li key={index}>{error}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {validationResults.warnings.length > 0 && (
-            <div>
-              <p className="font-medium">Warnings:</p>
-              <ul className="list-disc list-inside text-sm">
-                {validationResults.warnings.map((warning, index) => (
-                  <li key={index}>{warning}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+        <div className="bg-warning-50 border border-warning-200 text-warning-800 p-4 rounded-xl flex items-start gap-3">
+          <svg className="w-5 h-5 text-warning-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+          <div className="flex-1">
+            <p className="font-semibold mb-2">Content Validation</p>
+            {validationResults.errors.length > 0 && (
+              <div className="mb-2">
+                <p className="font-medium text-error-800">Errors:</p>
+                <ul className="list-disc list-inside text-sm space-y-1 mt-1">
+                  {validationResults.errors.map((error, index) => (
+                    <li key={index}>{error}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {validationResults.warnings.length > 0 && (
+              <div>
+                <p className="font-medium">Warnings:</p>
+                <ul className="list-disc list-inside text-sm space-y-1 mt-1">
+                  {validationResults.warnings.map((warning, index) => (
+                    <li key={index}>{warning}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Input form */}
+      {/* Input form - Using design system pattern */}
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Main prompt input */}
-        <div>
-          <label htmlFor="prompt" className="block text-sm font-medium text-gray-700 mb-2">
-            Subject Description *
+        <div className="space-y-2">
+          <label htmlFor="prompt" className="block text-sm font-medium text-neutral-700">
+            Subject Description
+            <span className="text-error-600 ml-1">*</span>
           </label>
           <textarea
             id="prompt"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors resize-none"
             rows={4}
             placeholder="Describe the subject you want to generate. Be specific about the curriculum, grade levels, and key topics to cover..."
             disabled={generating || loading}
             required
           />
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-neutral-500">
             Example: "Generate a comprehensive IGCSE Biology subject covering cell biology, genetics, ecology, and human physiology for grades 9-10"
           </p>
         </div>
@@ -170,7 +178,7 @@ const SubjectGeneratorForm: React.FC<SubjectGeneratorFormProps> = ({ onGeneratio
           <button
             type="button"
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className="flex items-center text-sm text-blue-600 hover:text-blue-700 font-medium"
+            className="flex items-center text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
           >
             <svg className={`w-4 h-4 mr-1 transform transition-transform ${showAdvanced ? 'rotate-90' : ''}`} fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
@@ -181,8 +189,8 @@ const SubjectGeneratorForm: React.FC<SubjectGeneratorFormProps> = ({ onGeneratio
 
         {/* Advanced settings */}
         {showAdvanced && (
-          <div className="bg-gray-50 p-4 rounded-lg space-y-4">
-            <h4 className="font-medium text-gray-900">LLM Configuration</h4>
+          <div className="bg-neutral-50 border border-neutral-200 p-4 rounded-xl space-y-4">
+            <h4 className="font-semibold text-neutral-900">LLM Configuration</h4>
             <LLMProviderSelector
               selectedProvider={selectedProvider}
               selectedModel={selectedModel}
@@ -197,22 +205,23 @@ const SubjectGeneratorForm: React.FC<SubjectGeneratorFormProps> = ({ onGeneratio
           <button
             type="submit"
             disabled={generating || loading || !prompt.trim()}
-            className={`flex-1 px-6 py-3 rounded-lg text-white font-medium transition-all ${
-              generating || loading || !prompt.trim()
-                ? 'bg-blue-300 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700 hover:shadow-md'
-            }`}
+            className="flex-1 px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 focus:ring-4 focus:ring-primary-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-soft hover:shadow-medium"
           >
             {generating || loading ? (
-              <span className="flex items-center justify-center">
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
                 Generating...
               </span>
             ) : (
-              'Generate Subject'
+              <span className="flex items-center justify-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Generate Subject
+              </span>
             )}
           </button>
 
@@ -220,7 +229,7 @@ const SubjectGeneratorForm: React.FC<SubjectGeneratorFormProps> = ({ onGeneratio
             type="button"
             onClick={handleReset}
             disabled={generating || loading}
-            className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+            className="px-6 py-2.5 bg-white text-neutral-700 font-medium rounded-lg border border-neutral-300 hover:bg-neutral-50 hover:border-neutral-400 focus:ring-4 focus:ring-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-soft"
           >
             Reset
           </button>
@@ -229,136 +238,146 @@ const SubjectGeneratorForm: React.FC<SubjectGeneratorFormProps> = ({ onGeneratio
 
       {/* Generated subject preview */}
       {generatedSubject && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Generated Subject</h3>
-            <span className="text-sm text-gray-500">Review and edit before saving</span>
+        <div className="bg-white border border-neutral-200 rounded-2xl p-6 space-y-6 shadow-soft">
+          <div className="flex items-center justify-between border-b border-neutral-200 pb-4">
+            <h3 className="text-lg font-semibold text-neutral-900">Generated Subject</h3>
+            <span className="text-sm text-neutral-500 bg-neutral-100 px-3 py-1 rounded-full">Review & Edit</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Subject Name *</label>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-neutral-700">
+                Subject Name
+                <span className="text-error-600 ml-1">*</span>
+              </label>
               <input
                 type="text"
                 value={generatedSubject.name}
                 onChange={(e) => handleEdit('name', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                 placeholder="Subject name"
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Subject Code *</label>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-neutral-700">
+                Subject Code
+                <span className="text-error-600 ml-1">*</span>
+              </label>
               <input
                 type="text"
                 value={generatedSubject.code}
                 onChange={(e) => handleEdit('code', e.target.value.toUpperCase())}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                 placeholder="e.g., BIO"
               />
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-neutral-700">
+              Description
+              <span className="text-error-600 ml-1">*</span>
+            </label>
             <textarea
               value={generatedSubject.description}
               onChange={(e) => handleEdit('description', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors resize-none"
               rows={4}
               placeholder="Subject description"
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Color Theme</label>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-neutral-700">Color Theme</label>
               <div className="flex items-center gap-3">
                 <input
                   type="color"
                   value={generatedSubject.color_hex}
                   onChange={(e) => handleEdit('color_hex', e.target.value)}
-                  className="w-12 h-10 border border-gray-300 rounded-lg cursor-pointer"
+                  className="w-12 h-10 border border-neutral-300 rounded-lg cursor-pointer"
                 />
                 <input
                   type="text"
                   value={generatedSubject.color_hex}
                   onChange={(e) => handleEdit('color_hex', e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="flex-1 px-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                   placeholder="#4285F4"
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Icon</label>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-neutral-700">Icon</label>
               <select
                 value={generatedSubject.icon_name}
                 onChange={(e) => handleEdit('icon_name', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors bg-white"
               >
-                <option value="book">Book</option>
-                <option value="calculator">Calculator</option>
-                <option value="flask">Flask</option>
-                <option value="atom">Atom</option>
-                <option value="globe">Globe</option>
-                <option value="microscope">Microscope</option>
-                <option value="dna">DNA</option>
-                <option value="chart">Chart</option>
-                <option value="language">Language</option>
-                <option value="art">Art</option>
+                <option value="book">📚 Book</option>
+                <option value="calculator">🧮 Calculator</option>
+                <option value="flask">⚗️ Flask</option>
+                <option value="atom">⚛️ Atom</option>
+                <option value="globe">🌍 Globe</option>
+                <option value="microscope">🔬 Microscope</option>
+                <option value="dna">🧬 DNA</option>
+                <option value="chart">📊 Chart</option>
+                <option value="language">🗣️ Language</option>
+                <option value="art">🎨 Art</option>
               </select>
             </div>
           </div>
 
-          {/* Preview */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">Preview</h4>
-            <div className="flex items-start gap-3">
+          {/* Preview Card */}
+          <div className="bg-neutral-50 border border-neutral-200 p-4 rounded-xl">
+            <h4 className="text-sm font-semibold text-neutral-700 mb-3">Preview</h4>
+            <div className="bg-white p-4 rounded-lg border border-neutral-200 flex items-start gap-4">
               <div
-                className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
+                className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 shadow-soft"
                 style={{ backgroundColor: generatedSubject.color_hex }}
               >
-                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2l3.09 6.26L22 9l-5 4.87L18.18 21 12 17.77 5.82 21 7 13.87 2 9l6.91-.74L12 2z" />
                 </svg>
               </div>
-              <div className="flex-1">
-                <h5 className="font-semibold text-gray-900">{generatedSubject.name || 'Subject Name'}</h5>
-                <p className="text-sm text-gray-600 mt-1 line-clamp-2">{generatedSubject.description || 'Subject description...'}</p>
-                <span className="inline-block bg-white px-2 py-1 rounded border text-xs text-gray-500 mt-2">
+              <div className="flex-1 min-w-0">
+                <h5 className="font-semibold text-neutral-900 truncate">{generatedSubject.name || 'Subject Name'}</h5>
+                <p className="text-sm text-neutral-600 mt-1 line-clamp-2">{generatedSubject.description || 'Subject description...'}</p>
+                <span className="inline-block bg-neutral-100 px-2.5 py-1 rounded-full text-xs font-medium text-neutral-700 mt-2 border border-neutral-200">
                   {generatedSubject.code || 'CODE'}
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4 border-t border-gray-200">
+          <div className="flex gap-3 pt-4 border-t border-neutral-200">
             <button
               onClick={handleSave}
               disabled={saving || loading || !generatedSubject.name?.trim() || !generatedSubject.code?.trim()}
-              className={`flex-1 px-6 py-3 rounded-lg text-white font-medium transition-all ${
-                saving || loading || !generatedSubject.name?.trim() || !generatedSubject.code?.trim()
-                  ? 'bg-green-300 cursor-not-allowed'
-                  : 'bg-green-600 hover:bg-green-700 hover:shadow-md'
-              }`}
+              className="flex-1 px-6 py-2.5 bg-success-600 text-white font-medium rounded-lg hover:bg-success-700 focus:ring-4 focus:ring-success-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-soft hover:shadow-medium"
             >
               {saving || loading ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
                   Saving...
                 </span>
               ) : (
-                'Save Subject'
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  </svg>
+                  Save Subject
+                </span>
               )}
             </button>
             <button
               onClick={() => setGeneratedSubject(null)}
               disabled={saving || loading}
-              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+              className="px-6 py-2.5 bg-white text-neutral-700 font-medium rounded-lg border border-neutral-300 hover:bg-neutral-50 hover:border-neutral-400 focus:ring-4 focus:ring-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-soft"
             >
               Discard
             </button>
@@ -368,41 +387,62 @@ const SubjectGeneratorForm: React.FC<SubjectGeneratorFormProps> = ({ onGeneratio
 
       {/* Example prompt suggestions */}
       {!generatedSubject && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-blue-900 mb-3">Quick Start Examples</h3>
-          <p className="text-blue-700 text-sm mb-4">Click any example below to get started quickly:</p>
+        <div className="bg-info-50 border border-info-200 rounded-xl p-6">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="w-10 h-10 bg-info-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 text-info-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-info-900 mb-1">Quick Start Examples</h3>
+              <p className="text-info-700 text-sm">Click any example below to get started quickly:</p>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <button
               onClick={() => setPrompt('Generate a comprehensive IGCSE Biology subject covering cell biology, genetics, ecology, and human physiology for grades 9-10')}
-              className="text-left p-4 bg-white border border-blue-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all"
+              className="text-left p-4 bg-white border border-info-200 rounded-lg hover:border-info-400 hover:shadow-md transition-all disabled:opacity-50"
               disabled={generating || loading}
             >
-              <div className="font-medium text-blue-900">IGCSE Biology</div>
-              <div className="text-sm text-blue-600 mt-1">Comprehensive biology curriculum</div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-2xl">🧬</span>
+                <span className="font-semibold text-info-900">IGCSE Biology</span>
+              </div>
+              <div className="text-sm text-info-700">Comprehensive biology curriculum</div>
             </button>
             <button
               onClick={() => setPrompt('Create a Physics subject for IGCSE students covering mechanics, waves, electricity, and modern physics')}
-              className="text-left p-4 bg-white border border-blue-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all"
+              className="text-left p-4 bg-white border border-info-200 rounded-lg hover:border-info-400 hover:shadow-md transition-all disabled:opacity-50"
               disabled={generating || loading}
             >
-              <div className="font-medium text-blue-900">IGCSE Physics</div>
-              <div className="text-sm text-blue-600 mt-1">Core physics concepts and applications</div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-2xl">⚛️</span>
+                <span className="font-semibold text-info-900">IGCSE Physics</span>
+              </div>
+              <div className="text-sm text-info-700">Core physics concepts and applications</div>
             </button>
             <button
               onClick={() => setPrompt('Generate a Mathematics subject for IGCSE curriculum covering algebra, geometry, statistics, and calculus fundamentals')}
-              className="text-left p-4 bg-white border border-blue-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all"
+              className="text-left p-4 bg-white border border-info-200 rounded-lg hover:border-info-400 hover:shadow-md transition-all disabled:opacity-50"
               disabled={generating || loading}
             >
-              <div className="font-medium text-blue-900">IGCSE Mathematics</div>
-              <div className="text-sm text-blue-600 mt-1">Essential mathematical concepts</div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-2xl">📐</span>
+                <span className="font-semibold text-info-900">IGCSE Mathematics</span>
+              </div>
+              <div className="text-sm text-info-700">Essential mathematical concepts</div>
             </button>
             <button
               onClick={() => setPrompt('Create a Chemistry subject for IGCSE students covering atomic structure, chemical bonding, organic chemistry, and practical skills')}
-              className="text-left p-4 bg-white border border-blue-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all"
+              className="text-left p-4 bg-white border border-info-200 rounded-lg hover:border-info-400 hover:shadow-md transition-all disabled:opacity-50"
               disabled={generating || loading}
             >
-              <div className="font-medium text-blue-900">IGCSE Chemistry</div>
-              <div className="text-sm text-blue-600 mt-1">Chemical principles and laboratory work</div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-2xl">⚗️</span>
+                <span className="font-semibold text-info-900">IGCSE Chemistry</span>
+              </div>
+              <div className="text-sm text-info-700">Chemical principles and laboratory work</div>
             </button>
           </div>
         </div>
